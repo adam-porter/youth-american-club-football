@@ -1,0 +1,29 @@
+{
+  "name": "template-hudl-navigation",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adam-porter/template-hudl-navigation.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/adam-porter/template-hudl-navigation/issues"
+  },
+  "homepage": "https://github.com/adam-porter/template-hudl-navigation#readme",
+  "description": "Hudl Navigation component built with Uniform design system styles",
+  "dependencies": {
+    "@adam-porter/shared-uniform-styles": "github:adam-porter/shared-uniform-styles",
+    "@vitejs/plugin-react": "^5.1.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "vite": "^7.3.0"
+  }
+}
