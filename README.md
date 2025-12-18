@@ -69,19 +69,16 @@ The Navigation component implements a responsive sidebar navigation with three s
 
 ### Navigation Items
 
-**Top Navigation:**
-- Home (active state shown)
-- Programs
-- Tickets (with accordion indicator)
-- Finances
-- Teams
-- Members
-- Settings
+**Top Navigation (workspace-scoped):**
+- Items are defined via shared nav config objects in `Navigation.jsx`:
+  - `directorNavItems` (org workspace)
+  - `teamNavItems` (team workspaces)
+  - a simplified config for the personal workspace
+- Parent items can declare `children` arrays; these sub-nav children are rendered with the shared `SubnavItem` component on **both desktop and mobile**.
+- Child items support `hasPill` and `pillText` so new badges can be added in one place and appear consistently across layouts.
 
 **Bottom Navigation:**
-- Calendar
-- Messages
-- Notifications
+- `bottomNavItems` defines common items such as Calendar, Messages, and Notifications, and is reused for both desktop and mobile bottom sections.
 
 ### Interactive Features
 

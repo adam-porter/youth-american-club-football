@@ -367,18 +367,18 @@ const Navigation = () => {
           .mobile-menu-children {
             display: flex;
             flex-direction: column;
-            gap: var(--u-space-zero, 0px);
+            gap: var(--u-space-eighth, 2px);
+            padding: var(--u-space-eighth, 2px) 0;
+            background-color: #F8F8F9;
+            border-radius: var(--u-border-radius-large, 8px);
           }
 
           .mobile-menu-item-child {
             padding-left: var(--u-space-two, 32px);
-            height: 32px;
-            border-radius: var(--u-border-radius-large, 8px);
           }
 
-          .mobile-menu-item-child .mobile-menu-item-label {
-            font-size: var(--u-font-size-200, 14px);
-            font-weight: var(--u-font-weight-medium, 500);
+          .mobile-menu-item-child .subnav-item {
+            width: 100%;
           }
 
           .nav-item {
@@ -1107,12 +1107,10 @@ const Navigation = () => {
 
             .mobile-menu-item {
               display: flex;
-              gap: var(--u-space-one-and-quarter, 20px);
               align-items: center;
               height: 48px;
               padding: var(--u-space-half, 8px) var(--u-space-one, 16px);
               border-radius: var(--u-border-radius-large, 4px);
-              cursor: pointer;
               background-color: transparent;
               color: var(--u-color-base-foreground, #36485c);
             }
@@ -1125,6 +1123,15 @@ const Navigation = () => {
               background-color: var(--u-color-emphasis-background-active, #96ccf3);
               color: var(--u-color-emphasis-foreground-contrast, #0d3673);
             }
+
+          .mobile-menu-item-content {
+            display: flex;
+            align-items: center;
+            gap: var(--u-space-one-and-quarter, 20px);
+            flex: 1;
+            min-width: 0;
+            cursor: pointer;
+          }
 
             .mobile-menu-item-icon {
               width: 24px;
@@ -1146,6 +1153,35 @@ const Navigation = () => {
               font-weight: var(--u-font-weight-medium, 500);
               line-height: 1.4;
             }
+
+          .mobile-menu-item-chevron {
+            width: 24px;
+            height: 24px;
+            border-radius: var(--u-border-radius-medium, 4px);
+            border: none;
+            background-color: var(--u-color-base-background, #e0e1e1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            flex-shrink: 0;
+            cursor: pointer;
+          }
+
+          .mobile-menu-item-chevron:hover {
+            background-color: #C4C6C8;
+          }
+
+          .mobile-menu-item-chevron img {
+            width: 16px;
+            height: 16px;
+            display: block;
+            transition: transform 0.2s ease;
+          }
+
+          .mobile-menu-item--open .mobile-menu-item-chevron {
+            background-color: var(--u-color-base-background, #e0e1e1);
+          }
 
             .mobile-menu-bottom-section {
               display: flex;
@@ -1445,50 +1481,72 @@ const Navigation = () => {
                       className={`mobile-menu-item ${isItemActive ? 'active' : ''} ${
                         hasChildren && isGroupOpen ? 'mobile-menu-item--open' : ''
                       }`}
-                      onClick={() => {
-                        if (hasChildren) {
-                          setOpenGroups((prev) => {
-                            if (prev.includes(item.id)) {
-                              return []
-                            }
-                            return [item.id]
-                          })
-                          setActiveItem(item.id)
-                        } else {
+                    >
+                      <div
+                        className="mobile-menu-item-content"
+                        onClick={() => {
+                          // Navigate to the parent item's own page
                           setActiveItem(item.id)
                           setOpenGroups([])
                           setIsMobileMenuOpen(false)
-                        }
-                      }}
-                    >
-                      <div className="mobile-menu-item-icon">
-                        <img src={item.icon} alt="" width="24" height="24" />
+                        }}
+                      >
+                        <div className="mobile-menu-item-icon">
+                          <img src={item.icon} alt="" width="24" height="24" />
+                        </div>
+                        <div className="mobile-menu-item-label">{item.label}</div>
                       </div>
-                      <div className="mobile-menu-item-label">{item.label}</div>
+                      {hasChildren && (
+                        <button
+                          type="button"
+                          className="mobile-menu-item-chevron"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setOpenGroups((prev) => {
+                              if (prev.includes(item.id)) {
+                                return []
+                              }
+                              return [item.id]
+                            })
+                          }}
+                          aria-label={`${isGroupOpen ? 'Collapse' : 'Expand'} ${item.label} menu`}
+                        >
+                          <img
+                            src={ExpandDownIcon}
+                            alt=""
+                            width="16"
+                            height="16"
+                            style={{
+                              transform: isGroupOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                            }}
+                          />
+                        </button>
+                      )}
                     </div>
                     {hasChildren && isGroupOpen && (
                       <div className="mobile-menu-children">
                         {item.children.map((child) => (
                           <div
                             key={child.id}
-                            className={`mobile-menu-item mobile-menu-item-child ${
-                              activeItem === child.id ? 'active' : ''
-                            }`}
-                            onClick={() => {
-                              setActiveItem(child.id)
-                              const parentGroupId = findParentGroupIdForItem(child.id)
-                              setOpenGroups((prev) => {
-                                if (!parentGroupId) {
-                                  return []
-                                }
-                                return prev.includes(parentGroupId) ? [parentGroupId] : []
-                              })
-                              setIsMobileMenuOpen(false)
-                            }}
+                            className="mobile-menu-item-child"
                           >
-                            <div className="mobile-menu-item-label">
-                              {child.label}
-                            </div>
+                            <SubnavItem
+                              label={child.label}
+                              active={activeItem === child.id}
+                              hasPill={!!child.hasPill}
+                              pillText={child.pillText}
+                              onClick={() => {
+                                setActiveItem(child.id)
+                                const parentGroupId = findParentGroupIdForItem(child.id)
+                                setOpenGroups((prev) => {
+                                  if (!parentGroupId) {
+                                    return []
+                                  }
+                                  return prev.includes(parentGroupId) ? [parentGroupId] : []
+                                })
+                                setIsMobileMenuOpen(false)
+                              }}
+                            />
                           </div>
                         ))}
                       </div>
