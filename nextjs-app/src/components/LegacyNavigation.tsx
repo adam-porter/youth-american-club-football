@@ -49,7 +49,7 @@ interface Workspace {
   avatar?: string;
   position?: string;
   subscriptionType?: string;
-  sport?: string;
+  sport?: string | null;
   primaryColor?: string | null;
   secondaryColor?: string | null;
 }
