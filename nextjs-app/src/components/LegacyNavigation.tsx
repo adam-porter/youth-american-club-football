@@ -64,7 +64,7 @@ interface UserMenuItem {
 interface OrganizationData {
   id: string;
   name: string;
-  primary_sport: string;
+  primary_sport: string | null;
   avatar: string | null;
   primary_color: string | null;
   secondary_color: string | null;
@@ -73,8 +73,8 @@ interface OrganizationData {
 interface TeamData {
   id: string;
   title: string;
-  sport: string;
-  gender: string;
+  sport: string | null;
+  gender: string | null;
   avatar: string | null;
   primary_color: string | null;
   secondary_color: string | null;
