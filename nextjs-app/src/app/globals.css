@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Uniform Design System CSS Variables */
+:root {
+  /* Colors */
+  --u-color-background-canvas: #eff0f0;
+  --u-color-background-container: #fefefe;
+  --u-color-background-subtle: #f5f6f7;
+  --u-color-background-popover: #fefefe;
+  --u-color-background-default: #e8eaec;
+  
+  --u-color-base-background: #e0e1e1;
+  --u-color-base-background-contrast: #607081;
+  --u-color-base-foreground: #36485c;
+  --u-color-base-foreground-contrast: #071c31;
+  --u-color-base-foreground-subtle: #607081;
+  
+  --u-color-emphasis-background-active: #96ccf3;
+  --u-color-emphasis-background-contrast: #0273e3;
+  --u-color-emphasis-foreground-contrast: #0d3673;
+  --u-color-emphasis-foreground-reversed: #fefefe;
+  
+  --u-color-line-subtle: #c4c6c8;
+  --u-color-line-media: rgba(254, 254, 254, 0.25);
+  
+  --u-color-alert-background: #fef0ee;
+  --u-color-alert-foreground: #bb1700;
+  
+  --u-color-success-foreground: #2e7d32;
+
+  /* Typography */
+  --u-font-body: var(--font-barlow), 'Barlow', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  
+  --u-font-size-micro: 12px;
+  --u-font-size-150: 12px;
+  --u-font-size-200: 14px;
+  --u-font-size-250: 16px;
+  --u-font-size-450: 24px;
+  --u-font-size-small: 14px;
+  --u-font-size-xx-large: 24px;
+  
+  --u-font-weight-medium: 500;
+  --u-font-weight-bold: 700;
+
+  /* Spacing */
+  --u-space-zero: 0px;
+  --u-space-eighth: 2px;
+  --u-space-quarter: 4px;
+  --u-space-half: 8px;
+  --u-space-three-quarter: 12px;
+  --u-space-one: 16px;
+  --u-space-one-and-quarter: 20px;
+  --u-space-one-and-half: 24px;
+  --u-space-two: 32px;
+  --u-space-small: 8px;
+  --u-space-four: 64px;
+
+  /* Border Radius */
+  --u-border-radius-medium: 4px;
+  --u-border-radius-large: 8px;
+
+  /* Standard Next.js variables */
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--u-color-background-canvas);
+  font-family: var(--u-font-body);
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

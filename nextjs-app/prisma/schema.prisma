@@ -1,0 +1,217 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model athletes {
+  id                       String                     @id
+  first_name               String
+  last_name                String
+  gender                   String
+  birthdate                DateTime
+  grade                    Int
+  grad_year                Int
+  created_at               DateTime                   @default(now())
+  parent_athletes          parent_athletes[]
+  registration_submissions registration_submissions[]
+}
+
+model organizations {
+  id              String      @id
+  name            String
+  primary_sport   String
+  type            String
+  avatar          String?
+  primary_color   String?
+  secondary_color String?
+  created_at      DateTime    @default(now())
+  updated_at      DateTime
+  programs        programs[]
+  teams           teams[]
+  seasons         seasons[]
+  nav_items       nav_items[]
+}
+
+model parent_athletes {
+  id           String   @id
+  parent_id    String
+  athlete_id   String
+  relationship String
+  athletes     athletes @relation(fields: [athlete_id], references: [id], onDelete: Cascade)
+  users        users    @relation(fields: [parent_id], references: [id], onDelete: Cascade)
+}
+
+model programs {
+  id                       String                     @id
+  organization_id          String
+  title                    String
+  type                     String
+  event_dates              Json
+  fee_responsibility       String
+  visibility               String
+  registration_status      String                     @default("open") // "open" or "closed"
+  is_two_part_second       Boolean?                   @default(false)
+  default_season_price     Decimal?                   @db.Decimal(10, 2)
+  created_by               String?
+  created_at               DateTime                   @default(now())
+  updated_at               DateTime
+  organizations            organizations              @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  creator                  users?                     @relation(fields: [created_by], references: [id])
+  registration_submissions registration_submissions[]
+  registrations            registrations[]
+  teams                    teams[]
+}
+
+model registration_submissions {
+  id                  String        @id
+  registration_id     String
+  program_id          String
+  athlete_id          String
+  parent_id           String
+  registration_status String        @default("paid")
+  payment_method      String?
+  team_id             String?
+  assignment_status   String        @default("paid")
+  source_program_id   String?
+  assigned_at         DateTime?
+  notified_at         DateTime?
+  invited_at          DateTime?
+  responded_at        DateTime?
+  finalized_at        DateTime?
+  created_at          DateTime      @default(now())
+  updated_at          DateTime
+  athletes            athletes      @relation(fields: [athlete_id], references: [id], onDelete: Cascade)
+  users               users         @relation(fields: [parent_id], references: [id], onDelete: Cascade)
+  programs            programs      @relation(fields: [program_id], references: [id], onDelete: Cascade)
+  registrations       registrations @relation(fields: [registration_id], references: [id], onDelete: Cascade)
+  teams               teams?        @relation(fields: [team_id], references: [id])
+}
+
+model registrations {
+  id                       String                     @id
+  program_id               String
+  title                    String
+  sport                    String
+  price                    Decimal                    @db.Decimal(10, 2)
+  event_dates              Json
+  full_payment_enabled     Boolean                    @default(true)
+  installment_plan_enabled Boolean                    @default(false)
+  installment_plan_config  Json?
+  capacity                 Int?
+  waitlist_enabled         Boolean                    @default(false)
+  age_min                  Int?
+  age_max                  Int?
+  gender                   String?
+  grade_min                Int?
+  grade_max                Int?
+  created_at               DateTime                   @default(now())
+  updated_at               DateTime
+  registration_submissions registration_submissions[]
+  programs                 programs                   @relation(fields: [program_id], references: [id], onDelete: Cascade)
+  teams                    teams[]
+}
+
+model seasons {
+  id              String        @id @default(uuid())
+  organization_id String
+  name            String        // e.g., "2025-2026"
+  start_date      DateTime?
+  end_date        DateTime?
+  is_active       Boolean       @default(true)
+  created_at      DateTime      @default(now())
+  updated_at      DateTime      @updatedAt
+  
+  organizations   organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  teams           teams[]
+  
+  @@index([organization_id])
+}
+
+model teams {
+  id                       String                     @id
+  organization_id          String
+  season_id                String?
+  title                    String
+  sport                    String
+  age_min                  Int?
+  age_max                  Int?
+  grade                    Int?
+  gender                   String
+  avatar                   String?
+  primary_color            String?
+  secondary_color          String?
+  max_roster_size          Int?
+  status                   String                     @default("draft")
+  season_program_id        String?
+  season_registration_id   String?
+  season_price_override    Decimal?                   @db.Decimal(10, 2)
+  finalized_at             DateTime?
+  created_at               DateTime                   @default(now())
+  updated_at               DateTime
+  registration_submissions registration_submissions[]
+  team_members             team_members[]
+  organizations            organizations              @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  seasons                  seasons?                   @relation(fields: [season_id], references: [id])
+  programs                 programs?                  @relation(fields: [season_program_id], references: [id])
+  registrations            registrations?             @relation(fields: [season_registration_id], references: [id])
+  
+  @@index([season_id])
+}
+
+model users {
+  id                       String                     @id
+  email                    String                     @unique
+  first_name               String
+  last_name                String
+  role                     String
+  avatar                   String?
+  created_at               DateTime                   @default(now())
+  parent_athletes          parent_athletes[]
+  programs_created         programs[]
+  registration_submissions registration_submissions[]
+  team_members             team_members[]
+}
+
+model team_members {
+  id         String   @id @default(uuid())
+  team_id    String
+  user_id    String
+  role       String   @default("member") // admin, coach, member
+  created_at DateTime @default(now())
+  
+  teams      teams    @relation(fields: [team_id], references: [id], onDelete: Cascade)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  
+  @@unique([team_id, user_id])
+  @@index([team_id])
+  @@index([user_id])
+}
+
+model nav_items {
+  id              String      @id @default(uuid())
+  organization_id String?
+  label           String
+  icon            String
+  route           String?
+  order           Int         @default(0)
+  parent_id       String?
+  is_active       Boolean     @default(true)
+  created_at      DateTime    @default(now())
+  updated_at      DateTime    @updatedAt
+  
+  // Self-relation for nested items (e.g., Settings > Ticketing)
+  parent          nav_items?  @relation("NavItemChildren", fields: [parent_id], references: [id], onDelete: Cascade)
+  children        nav_items[] @relation("NavItemChildren")
+  
+  // Organization relation (null = global nav items)
+  organization    organizations? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@index([organization_id])
+  @@index([parent_id])
+  @@index([order])
+}
