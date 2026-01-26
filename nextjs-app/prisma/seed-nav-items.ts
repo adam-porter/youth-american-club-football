@@ -52,12 +52,12 @@ async function main() {
     }
   });
 
-  const members = await prisma.nav_items.create({
+  const community = await prisma.nav_items.create({
     data: {
       organization_id: org.id,
-      label: 'Members',
-      icon: 'members',
-      route: '/members',
+      label: 'Community',
+      icon: 'community',
+      route: '/community',
       order: 4,
       is_active: true,
     }
@@ -129,7 +129,7 @@ async function main() {
   });
 
   console.log('Nav items seeded successfully!');
-  console.log(`Created: ${programs.label}, ${teams.label}, ${finances.label}, ${members.label}, ${tickets.label}, ${settings.label} (with 4 children)`);
+  console.log(`Created: ${programs.label}, ${teams.label}, ${finances.label}, ${community.label}, ${tickets.label}, ${settings.label} (with 4 children)`);
 }
 
 main()

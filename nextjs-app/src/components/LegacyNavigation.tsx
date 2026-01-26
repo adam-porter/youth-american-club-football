@@ -11,7 +11,7 @@ const ProgramsIcon = '/icons/programs.svg';
 const TicketsIcon = '/icons/tickets.svg';
 const FinancesIcon = '/icons/finances.svg';
 const TeamsIcon = '/icons/teams.svg';
-const MembersIcon = '/icons/members.svg';
+const CommunityIcon = '/icons/community.svg';
 const SettingsIcon = '/icons/settings.svg';
 const CalendarIcon = '/icons/calendar.svg';
 const MessagesIcon = '/icons/messages.svg';
@@ -133,7 +133,7 @@ const iconMap: Record<string, string> = {
   programs: ProgramsIcon,
   teams: TeamsIcon,
   finances: FinancesIcon,
-  members: MembersIcon,
+  community: CommunityIcon,
   settings: SettingsIcon,
   home: HomeIcon,
   tickets: TicketsIcon,
@@ -242,7 +242,7 @@ const LegacyNavigation: React.FC<LegacyNavigationProps> = ({
         { id: 'Programs', icon: ProgramsIcon, label: 'Programs' },
         { id: 'Teams', icon: TeamsIcon, label: 'Teams' },
         { id: 'Finances', icon: FinancesIcon, label: 'Finances' },
-        { id: 'Members', icon: MembersIcon, label: 'Members' },
+        { id: 'Community', icon: CommunityIcon, label: 'Community' },
         {
           id: 'Settings',
           icon: SettingsIcon,
