@@ -173,35 +173,27 @@ function TableContent({ programs }: { programs: ProgramWithStats[] }) {
       <div className="table-row table-header">
         <div className="table-cell cell-title">
           <span className="header-label">Title</span>
-          <SortArrow />
-        </div>
-        <div className="table-cell cell-created-by">
-          <span className="header-label">Created By</span>
-          <SortArrow />
-        </div>
-        <div className="table-cell cell-dates">
-          <span className="header-label">Event Dates</span>
-          <SortArrow />
-        </div>
-        <div className="table-cell cell-type">
-          <span className="header-label">Type</span>
-          <SortArrow />
-        </div>
-        <div className="table-cell cell-registrants align-right">
-          <span className="header-label">Registrants</span>
-          <SortArrow />
-        </div>
-        <div className="table-cell cell-value align-right">
-          <span className="header-label">Program Value</span>
-          <SortArrow />
-        </div>
-        <div className="table-cell cell-visibility">
-          <span className="header-label">Visibility</span>
-          <SortArrow />
         </div>
         <div className="table-cell cell-registration">
           <span className="header-label">Registration</span>
-          <SortArrow />
+        </div>
+        <div className="table-cell cell-visibility">
+          <span className="header-label">Visibility</span>
+        </div>
+        <div className="table-cell cell-type">
+          <span className="header-label">Type</span>
+        </div>
+        <div className="table-cell cell-dates">
+          <span className="header-label">Event Dates</span>
+        </div>
+        <div className="table-cell cell-created-by">
+          <span className="header-label">Created By</span>
+        </div>
+        <div className="table-cell cell-registrants align-right">
+          <span className="header-label">Registrants</span>
+        </div>
+        <div className="table-cell cell-value align-right">
+          <span className="header-label">Program Value</span>
         </div>
         <div className="table-cell cell-actions">
           {/* Empty header for actions column */}
@@ -214,26 +206,26 @@ function TableContent({ programs }: { programs: ProgramWithStats[] }) {
           <div className="table-cell cell-title emphasized">
             {program.title}
           </div>
-          <div className="table-cell cell-created-by">
-            <CreatorAvatar creator={program.createdBy} />
+          <div className="table-cell cell-registration">
+            <StatusBadge status={program.registrationStatus} type="registration" />
+          </div>
+          <div className="table-cell cell-visibility">
+            <StatusBadge status={program.visibility} type="visibility" />
+          </div>
+          <div className="table-cell cell-type">
+            {formatProgramType(program.type)}
           </div>
           <div className="table-cell cell-dates">
             {formatDateRange(program.eventDates)}
           </div>
-          <div className="table-cell cell-type">
-            {formatProgramType(program.type)}
+          <div className="table-cell cell-created-by">
+            <CreatorAvatar creator={program.createdBy} />
           </div>
           <div className="table-cell cell-registrants align-right">
             {program.registrantCount}
           </div>
           <div className="table-cell cell-value align-right">
             {formatCurrency(program.programValue)}
-          </div>
-          <div className="table-cell cell-visibility">
-            <StatusBadge status={program.visibility} type="visibility" />
-          </div>
-          <div className="table-cell cell-registration">
-            <StatusBadge status={program.registrationStatus} type="registration" />
           </div>
           <div className="table-cell cell-actions">
             <button className="more-options-btn" aria-label="More options">
@@ -259,7 +251,7 @@ function TableContent({ programs }: { programs: ProgramWithStats[] }) {
 
         .table-header {
           background: var(--u-color-background-container, #fefefe);
-          border-bottom: 1px solid var(--u-color-base-foreground-subtle, #607081);
+          border-bottom: 1px solid var(--u-color-line-subtle, #c4c6c8);
         }
 
         .table-data {
@@ -402,11 +394,13 @@ export default function ProgramsTable({ programs }: { programs: ProgramWithStats
     },
   ];
 
-  // Filter programs based on status
-  // Currently all programs are "published" - draft/archived would come from a status field
-  const statusFilteredPrograms = statusFilter === 'published' 
-    ? programs 
-    : []; // No draft or archived programs exist yet
+  // Filter programs based on status field
+  const statusFilteredPrograms = programs.filter(program => {
+    if (statusFilter === 'published') return program.status === 'published';
+    if (statusFilter === 'draft') return program.status === 'draft';
+    if (statusFilter === 'archive') return program.status === 'archived';
+    return true;
+  });
 
   // Filter programs based on search query within the selected segment
   const filteredPrograms = searchQuery.trim()

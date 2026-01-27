@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { usePathname } from 'next/navigation';
 import React from 'react';
 
 const LegacyNavigation = dynamic(
@@ -64,6 +65,14 @@ export default function NavigationWrapper({
   currentUser,
   children 
 }: NavigationWrapperProps) {
+  const pathname = usePathname();
+  const isManageTeamsPage = pathname === '/teams/manage';
+
+  // If on manage teams page, render children without navigation
+  if (isManageTeamsPage) {
+    return <>{children}</>;
+  }
+
   return (
     <LegacyNavigation 
       organization={organization} 

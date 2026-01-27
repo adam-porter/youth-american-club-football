@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Barlow } from 'next/font/google';
 import './globals.css';
 import NavigationWrapper from '@/components/NavigationWrapper';
+import { ToastProvider } from '@/components/Toast';
 import { getOrganizationWithNavItems, getCurrentUser } from '@/lib/data';
 
 const barlow = Barlow({ 
@@ -70,14 +71,16 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={`${barlow.className} ${barlow.variable}`}>
-        <NavigationWrapper 
-          organization={organization} 
-          teams={teams} 
-          navItems={navItems}
-          currentUser={currentUser}
-        >
-          {children}
-        </NavigationWrapper>
+        <ToastProvider>
+          <NavigationWrapper 
+            organization={organization} 
+            teams={teams} 
+            navItems={navItems}
+            currentUser={currentUser}
+          >
+            {children}
+          </NavigationWrapper>
+        </ToastProvider>
       </body>
     </html>
   );

@@ -50,6 +50,9 @@ export async function getOrganizationWithNavItems() {
   const organization = await db.organizations.findFirst({
     include: {
       teams: {
+        where: {
+          status: 'provisioned', // Only show provisioned teams in workspace switcher
+        },
         orderBy: [
           { sport: 'asc' },
           { title: 'asc' }

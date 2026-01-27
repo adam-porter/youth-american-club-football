@@ -55,6 +55,7 @@ model programs {
   fee_responsibility       String
   visibility               String
   registration_status      String                     @default("open") // "open" or "closed"
+  status                   String                     @default("published") // "draft", "published", "archived"
   is_two_part_second       Boolean?                   @default(false)
   default_season_price     Decimal?                   @db.Decimal(10, 2)
   created_by               String?

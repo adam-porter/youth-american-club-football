@@ -999,7 +999,7 @@ const LegacyNavigation: React.FC<LegacyNavigationProps> = ({
           border-radius: var(--u-space-small, 8px);
           padding: var(--u-space-two, 32px) var(--u-space-four, 64px);
           width: 100%;
-          height: 100%;
+          min-height: 100%;
           display: flex;
           flex-direction: column;
           gap: var(--u-space-two, 32px);

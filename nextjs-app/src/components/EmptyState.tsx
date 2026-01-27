@@ -89,6 +89,9 @@ export type EmptyStateVariant =
   | 'programs-archived'
   | 'teams'
   | 'teams-season'
+  | 'teams-athletes'
+  | 'teams-parents'
+  | 'teams-staff'
   | 'tickets-events'
   | 'tickets-events-published'
   | 'tickets-events-non-ticketed'
@@ -129,8 +132,23 @@ const contentMap: Record<EmptyStateVariant, { title: string; description: string
   },
   'teams-season': {
     title: 'No teams for this season',
-    description: 'Teams for this season will appear here once they are created.',
+    description: 'Get started by tapping "+ Add Team" to create your first team.',
     icon: <CalendarIcon />,
+  },
+  'teams-athletes': {
+    title: 'No athletes yet',
+    description: 'Athletes will appear here once they are added to your teams.',
+    icon: <UsersIcon />,
+  },
+  'teams-parents': {
+    title: 'No parents yet',
+    description: 'Parents will appear here once athletes are registered.',
+    icon: <UsersIcon />,
+  },
+  'teams-staff': {
+    title: 'No staff yet',
+    description: 'Staff members will appear here once they are added to your organization.',
+    icon: <UsersIcon />,
   },
   'tickets-events': {
     title: 'No events yet',
@@ -187,11 +205,11 @@ const contentMap: Record<EmptyStateVariant, { title: string; description: string
 export default function EmptyState({ variant, searchQuery, seasonName }: EmptyStateProps) {
   const content = contentMap[variant];
   
-  // Override title for search with query
+  // Override title for search with query or season
   const title = variant === 'search' && searchQuery 
     ? `No results for "${searchQuery}"`
     : variant === 'teams-season' && seasonName
-    ? `No teams for ${seasonName}`
+    ? `You haven't added any teams this season`
     : content.title;
 
   return (
@@ -211,8 +229,8 @@ export default function EmptyState({ variant, searchQuery, seasonName }: EmptySt
           padding: var(--u-space-four, 64px) var(--u-space-one-and-half, 24px);
           text-align: center;
           background: var(--u-color-background-container, #fefefe);
-          border-radius: var(--u-border-radius-medium, 4px);
-          border: 1px solid var(--u-color-background-canvas, #eff0f0);
+          border-top: 1px solid var(--u-color-background-canvas, #eff0f0);
+          gap: var(--u-space-quarter, 4px);
         }
 
         .empty-icon {
@@ -222,10 +240,9 @@ export default function EmptyState({ variant, searchQuery, seasonName }: EmptySt
 
         .empty-title {
           font-family: var(--u-font-body);
-          font-weight: var(--u-font-weight-bold, 700);
+          font-weight: var(--u-font-weight-medium, 500);
           font-size: var(--u-font-size-250, 18px);
           color: var(--u-color-base-foreground-contrast, #071c31);
-          margin: 0 0 var(--u-space-half, 8px) 0;
         }
 
         .empty-description {
@@ -233,7 +250,7 @@ export default function EmptyState({ variant, searchQuery, seasonName }: EmptySt
           font-size: var(--u-font-size-200, 14px);
           color: var(--u-color-base-foreground, #36485c);
           margin: 0;
-          max-width: 320px;
+          max-width: 400px;
           line-height: 1.4;
         }
       `}</style>

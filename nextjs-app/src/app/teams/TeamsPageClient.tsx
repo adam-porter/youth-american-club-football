@@ -1,20 +1,46 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import PageHeader from '@/components/PageHeader';
 import TeamsTable from '@/components/TeamsTable';
+import StaffTable from '@/components/StaffTable';
 import Toolbar from '@/components/Toolbar';
-import type { TeamWithStats } from '@/lib/actions/teams';
-import type { EmptyStateVariant } from '@/components/EmptyState';
+import ActionBar from '@/components/ActionBar';
+import CopyTeamsModal from '@/components/CopyTeamsModal';
+import type { TeamWithStats, Season, StaffUser } from '@/lib/actions/teams';
+import EmptyState, { type EmptyStateVariant } from '@/components/EmptyState';
+
+interface CurrentUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+}
 
 interface TeamsPageClientProps {
   teams: TeamWithStats[];
+  seasons: Season[];
+  staff: StaffUser[];
+  currentUser: CurrentUser | null;
 }
 
-export default function TeamsPageClient({ teams }: TeamsPageClientProps) {
+export default function TeamsPageClient({ teams, seasons, staff, currentUser }: TeamsPageClientProps) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('Teams');
-  const [selectedSeason, setSelectedSeason] = useState('2025-2026');
+  // Default to active season, or first season if none active
+  const activeSeason = seasons.find(s => s.isActive) || seasons[0];
+  const [selectedSeasonId, setSelectedSeasonId] = useState(activeSeason?.id || '');
   const [searchQuery, setSearchQuery] = useState('');
+  const [staffSearchQuery, setStaffSearchQuery] = useState('');
+  
+  // Copy mode state
+  const copyMode = searchParams.get('action') === 'copy-teams';
+  const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
+  const [isCopyModalOpen, setIsCopyModalOpen] = useState(false);
+  const [lastClickedIndex, setLastClickedIndex] = useState<number | null>(null);
+
+  const selectedSeason = seasons.find(s => s.id === selectedSeasonId);
 
   const tabs = [
     { label: 'Teams', isActive: activeTab === 'Teams', onClick: () => setActiveTab('Teams') },
@@ -26,17 +52,14 @@ export default function TeamsPageClient({ teams }: TeamsPageClientProps) {
   const seasonSegments = [
     {
       placeholder: 'Season',
-      value: selectedSeason,
-      options: [
-        { value: '2025-2026', label: '2025-2026' },
-        { value: '2026-2027', label: '2026-2027' },
-      ],
-      onChange: (value: string) => setSelectedSeason(value),
+      value: selectedSeasonId,
+      options: seasons.map(s => ({ value: s.id, label: `${s.name} Season` })),
+      onChange: (value: string) => setSelectedSeasonId(value),
     },
   ];
 
-  // Filter teams by season (2026-2027 has no teams yet)
-  const seasonFilteredTeams = selectedSeason === '2025-2026' ? teams : [];
+  // Filter teams by selected season
+  const seasonFilteredTeams = teams.filter(team => team.seasonId === selectedSeasonId);
   
   // Filter by search query
   const filteredTeams = searchQuery.trim()
@@ -46,10 +69,62 @@ export default function TeamsPageClient({ teams }: TeamsPageClientProps) {
       )
     : seasonFilteredTeams;
 
+  // Filter staff by search query
+  const filteredStaff = staffSearchQuery.trim()
+    ? staff.filter(user => 
+        `${user.firstName} ${user.lastName}`.toLowerCase().includes(staffSearchQuery.toLowerCase()) ||
+        user.email.toLowerCase().includes(staffSearchQuery.toLowerCase()) ||
+        user.role.toLowerCase().includes(staffSearchQuery.toLowerCase())
+      )
+    : staff;
+  
+  // Handle team selection
+  const handleTeamSelectionChange = (teamId: string, checked: boolean, index: number, shiftKey: boolean) => {
+    if (shiftKey && lastClickedIndex !== null && copyMode) {
+      // Shift-click: select range
+      const startIndex = Math.min(lastClickedIndex, index);
+      const endIndex = Math.max(lastClickedIndex, index);
+      const rangeTeamIds = filteredTeams.slice(startIndex, endIndex + 1).map(team => team.id);
+      
+      // Use the intended state of the current item (checked parameter)
+      if (checked) {
+        // Add all in range
+        setSelectedTeamIds([...new Set([...selectedTeamIds, ...rangeTeamIds])]);
+      } else {
+        // Remove all in range
+        setSelectedTeamIds(selectedTeamIds.filter(id => !rangeTeamIds.includes(id)));
+      }
+    } else {
+      // Normal click
+      if (checked) {
+        setSelectedTeamIds([...selectedTeamIds, teamId]);
+      } else {
+        setSelectedTeamIds(selectedTeamIds.filter(id => id !== teamId));
+      }
+    }
+    
+    // Update last clicked index
+    setLastClickedIndex(index);
+  };
+  
+  const handleSelectAllChange = (checked: boolean) => {
+    if (checked) {
+      setSelectedTeamIds(filteredTeams.map(team => team.id));
+    } else {
+      setSelectedTeamIds([]);
+      setLastClickedIndex(null);
+    }
+  };
+  
+  const handleClearSelection = () => {
+    setSelectedTeamIds([]);
+    setLastClickedIndex(null);
+  };
+
   // Determine empty state variant
   const getEmptyStateVariant = (): EmptyStateVariant => {
     if (searchQuery.trim() && filteredTeams.length === 0) return 'search';
-    if (selectedSeason === '2026-2027') return 'teams-season';
+    if (seasonFilteredTeams.length === 0) return 'teams-season';
     return 'teams';
   };
 
@@ -58,46 +133,109 @@ export default function TeamsPageClient({ teams }: TeamsPageClientProps) {
       <PageHeader 
         title="Teams"
         description="View and manage your organization's teams, rosters, and schedules."
-        actions={[
+        actions={activeTab === 'Teams' ? [
           { label: 'Team Assignments', buttonStyle: 'minimal' },
-          { label: 'Manage Teams', buttonStyle: 'standard' }
-        ]}
+          { label: 'Manage Teams', buttonStyle: 'standard', onClick: () => router.push('/teams/manage') }
+        ] : undefined}
         tabs={tabs}
+      />
+      
+      <CopyTeamsModal
+        isOpen={isCopyModalOpen}
+        onClose={() => setIsCopyModalOpen(false)}
+        selectedTeamIds={selectedTeamIds}
+        sourceSeasonId={selectedSeasonId}
+        seasons={seasons}
       />
       
       {activeTab === 'Teams' && (
         <div className="teams-content">
-          <Toolbar
-            segments={seasonSegments}
-            searchPlaceholder="Search teams..."
-            showFilter={true}
-            showExport={true}
-            onSearch={(query) => setSearchQuery(query)}
-          />
+          <div className="toolbar-wrapper">
+            <Toolbar
+              segments={seasonSegments}
+              searchPlaceholder="Search teams..."
+              showFilter={true}
+              showExport={true}
+              onSearch={(query) => setSearchQuery(query)}
+            />
+            {copyMode && selectedTeamIds.length > 0 && (
+              <ActionBar
+                selectedCount={selectedTeamIds.length}
+                onDuplicate={() => setIsCopyModalOpen(true)}
+                onDelete={() => {
+                  // TODO: Implement delete functionality
+                  console.log('Delete teams:', selectedTeamIds);
+                }}
+                onClose={handleClearSelection}
+                onClearSelection={handleClearSelection}
+              />
+            )}
+          </div>
           <TeamsTable 
-            teams={filteredTeams} 
+            teams={filteredTeams}
+            seasons={seasons}
             emptyStateVariant={getEmptyStateVariant()}
-            emptyStateSeasonName={selectedSeason}
+            emptyStateSeasonName={selectedSeason?.name}
             searchQuery={searchQuery}
+            copyMode={copyMode}
+            selectedTeamIds={selectedTeamIds}
+            onTeamSelectionChange={handleTeamSelectionChange}
+            onSelectAllChange={handleSelectAllChange}
+            onSelectAllChangeWithReset={() => {
+              setLastClickedIndex(null);
+              setSelectedTeamIds(filteredTeams.map(team => team.id));
+            }}
           />
         </div>
       )}
 
       {activeTab === 'Athletes' && (
-        <div className="placeholder-content">
-          <p>Athletes content coming soon...</p>
+        <div className="teams-content">
+          <div className="toolbar-wrapper">
+            <Toolbar
+              segments={seasonSegments}
+              searchPlaceholder="Search athletes..."
+              showFilter={true}
+              showExport={true}
+              onSearch={(query) => setSearchQuery(query)}
+            />
+          </div>
+          <EmptyState variant="teams-athletes" searchQuery={searchQuery} />
         </div>
       )}
 
       {activeTab === 'Parents' && (
-        <div className="placeholder-content">
-          <p>Parents content coming soon...</p>
+        <div className="teams-content">
+          <div className="toolbar-wrapper">
+            <Toolbar
+              segments={seasonSegments}
+              searchPlaceholder="Search parents..."
+              showFilter={true}
+              showExport={true}
+              onSearch={(query) => setSearchQuery(query)}
+            />
+          </div>
+          <EmptyState variant="teams-parents" searchQuery={searchQuery} />
         </div>
       )}
 
       {activeTab === 'Staff' && (
-        <div className="placeholder-content">
-          <p>Staff content coming soon...</p>
+        <div className="teams-content">
+          <div className="toolbar-wrapper">
+            <Toolbar
+              segments={seasonSegments}
+              searchPlaceholder="Search staff..."
+              showFilter={true}
+              showExport={true}
+              onSearch={(query) => setStaffSearchQuery(query)}
+            />
+          </div>
+          <StaffTable 
+            staff={filteredStaff} 
+            emptyStateVariant="teams-staff"
+            searchQuery={staffSearchQuery}
+            currentUserId={currentUser?.id}
+          />
         </div>
       )}
 
@@ -116,16 +254,9 @@ export default function TeamsPageClient({ teams }: TeamsPageClientProps) {
           width: 100%;
         }
 
-        .placeholder-content {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: var(--u-space-four, 64px);
-          background: var(--u-color-background-container, #fefefe);
-          border-radius: var(--u-border-radius-medium, 4px);
-          border: 1px dashed var(--u-color-line-subtle, #c4c6c8);
-          color: var(--u-color-base-foreground-subtle, #607081);
-          font-family: var(--u-font-body);
+        .toolbar-wrapper {
+          position: relative;
+          width: 100%;
         }
       `}</style>
     </div>
