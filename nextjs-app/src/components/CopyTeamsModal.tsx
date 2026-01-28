@@ -30,7 +30,6 @@ export default function CopyTeamsModal({
   isOpen, 
   onClose, 
   selectedTeamIds, 
-  sourceSeasonId,
   seasons 
 }: CopyTeamsModalProps) {
   const router = useRouter();

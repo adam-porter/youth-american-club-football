@@ -62,15 +62,6 @@ function formatRegistrationStatus(status: string): string {
   return status === 'open' ? 'Open' : 'Closed';
 }
 
-function SortArrow() {
-  return (
-    <svg width="10" height="11" viewBox="0 0 10 11" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M5 0L8.5 4H1.5L5 0Z" fill="var(--u-color-base-foreground-subtle, #607081)" />
-      <path d="M5 11L1.5 7H8.5L5 11Z" fill="var(--u-color-base-foreground-subtle, #607081)" />
-    </svg>
-  );
-}
-
 function MoreOptionsIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">

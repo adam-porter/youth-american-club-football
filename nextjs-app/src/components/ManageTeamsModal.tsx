@@ -6,7 +6,6 @@ import type { TeamWithStats, Season } from '@/lib/actions/teams';
 import { updateTeam, createTeam, type UpdateTeamInput } from '@/lib/actions/teams';
 import Button from './Button';
 import Select from './Select';
-import Icon from './Icon';
 import { useToast } from './Toast';
 
 interface ManageTeamsModalProps {
@@ -36,37 +35,10 @@ function birthdateToAge(birthdate: string | null): number | null {
   }
 }
 
-// Convert birthdate string to YYYY-MM-DD format for input
-function formatDateForInput(birthdate: string | null): string {
-  if (!birthdate) return '';
-  try {
-    const date = new Date(birthdate);
-    if (isNaN(date.getTime())) return '';
-    return format(date, 'yyyy-MM-dd');
-  } catch {
-    return '';
-  }
-}
-
-// Parse date input to Date object
-function parseDateInput(dateString: string): Date | null {
-  if (!dateString) return null;
-  const date = new Date(dateString);
-  return isNaN(date.getTime()) ? null : date;
-}
-
 function BackIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M10 3L4.5 8.5L2 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
@@ -117,7 +89,7 @@ function EditableTextCell({ value, onSave, placeholder, className }: EditableTex
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      e.currentTarget.blur();
+      (e.currentTarget as HTMLElement).blur();
     } else if (e.key === 'Escape') {
       setEditValue(value);
       setIsEditing(false);
@@ -268,7 +240,7 @@ function EditableNumberCell({ value, onSave, placeholder, className }: EditableN
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      e.currentTarget.blur();
+      (e.currentTarget as HTMLElement).blur();
     } else if (e.key === 'Escape') {
       setEditValue(value?.toString() || '');
       setIsEditing(false);
@@ -365,7 +337,7 @@ function EditableDateCell({ age, onSave, placeholder, className }: EditableDateC
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      e.currentTarget.blur();
+      (e.currentTarget as HTMLElement).blur();
     } else if (e.key === 'Escape') {
       if (age !== null) {
         const birthdate = subYears(new Date(), age);
@@ -455,16 +427,6 @@ function EditableColorCell({ value, onSave, className }: EditableColorCellProps)
     }
   };
 
-  const handleHexChange = async (newHex: string) => {
-    const normalizedHex = newHex.startsWith('#') ? newHex : `#${newHex}`;
-    setHexValue(normalizedHex.toUpperCase());
-    
-    if (/^#[0-9A-F]{6}$/i.test(normalizedHex)) {
-      setEditValue(normalizedHex);
-      await handleColorChange(normalizedHex);
-    }
-  };
-
   const handleHexBlur = async () => {
     if (!/^#[0-9A-F]{6}$/i.test(hexValue)) {
       setError('Invalid hex color');
@@ -479,7 +441,7 @@ function EditableColorCell({ value, onSave, className }: EditableColorCellProps)
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      e.currentTarget.blur();
+      (e.currentTarget as HTMLElement).blur();
     } else if (e.key === 'Escape') {
       setEditValue(value || '#D9D9D9');
       setHexValue(value || '');
@@ -637,7 +599,7 @@ export default function ManageTeamsModal({
         setLocalTeams(prev => [...prev, newTeam]);
         showToast(`Successfully created team "${result.team.title}"`, 'success');
       }
-    } catch (error) {
+    } catch {
       showToast('Failed to create team', 'error');
     } finally {
       setIsCreating(false);

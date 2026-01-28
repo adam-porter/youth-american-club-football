@@ -31,15 +31,6 @@ function getSeasonName(seasonId: string | null, seasons: Season[]): string {
   return season?.name || '—';
 }
 
-function SortArrow() {
-  return (
-    <svg width="10" height="11" viewBox="0 0 10 11" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M5 0L8.5 4H1.5L5 0Z" fill="var(--u-color-base-foreground-subtle, #607081)" />
-      <path d="M5 11L1.5 7H8.5L5 11Z" fill="var(--u-color-base-foreground-subtle, #607081)" />
-    </svg>
-  );
-}
-
 function TeamAvatar({ avatar, title }: { avatar: string | null; title: string }) {
   const initials = title
     .split(' ')
@@ -282,8 +273,8 @@ function TableContent({
   onSelectAllChange?: (checked: boolean) => void;
   onSelectAllChangeWithReset?: () => void;
 }) {
-  const allSelected = copyMode && teams.length > 0 && teams.every(team => selectedTeamIds.includes(team.id));
-  const someSelected = copyMode && teams.length > 0 && selectedTeamIds.length > 0 && !allSelected;
+  const allSelected = !!(copyMode && teams.length > 0 && teams.every(team => selectedTeamIds.includes(team.id)));
+  const someSelected = !!(copyMode && teams.length > 0 && selectedTeamIds.length > 0 && !allSelected);
 
   return (
     <div className="teams-table">
@@ -294,7 +285,7 @@ function TableContent({
             <Checkbox
               checked={allSelected}
               indeterminate={someSelected}
-              onChange={(checked) => {
+              onChange={() => {
                 // If all are selected, deselect all. Otherwise (none or some selected), select all.
                 if (allSelected) {
                   onSelectAllChange?.(false);
@@ -338,7 +329,7 @@ function TableContent({
 
       {/* Data Rows */}
       {teams.map((team, index) => {
-        const isSelected = copyMode && selectedTeamIds.includes(team.id);
+        const isSelected = !!(copyMode && selectedTeamIds.includes(team.id));
         return (
           <div 
             key={team.id} 

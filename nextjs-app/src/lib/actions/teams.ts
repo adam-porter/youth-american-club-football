@@ -98,7 +98,7 @@ export async function updateTeam(input: UpdateTeamInput): Promise<UpdateTeamResu
     }
 
     // Build update data object with only provided fields
-    const updateData: any = {
+    const updateData: Record<string, string | number | Date | null> = {
       updated_at: new Date(),
     };
 
@@ -114,7 +114,8 @@ export async function updateTeam(input: UpdateTeamInput): Promise<UpdateTeamResu
 
     await db.teams.update({
       where: { id: input.id },
-      data: updateData,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: updateData as any,
     });
 
     // Don't revalidate on individual updates - rely on optimistic updates in the UI
@@ -313,7 +314,7 @@ export async function getStaffUsers(organizationId: string): Promise<StaffUser[]
   for (const user of teamMemberUsers) {
     if (!allUserIds.has(user.id)) {
       allUserIds.add(user.id);
-      const teamRoles = [...new Set(user.team_members.map(tm => tm.role))];
+      const teamRoles = Array.from(new Set(user.team_members.map(tm => tm.role)));
       staffUsers.push({
         id: user.id,
         firstName: user.first_name,
@@ -439,7 +440,7 @@ export async function copyTeams(input: CopyTeamsInput): Promise<CopyTeamsResult>
 
       for (const sourceTeam of sourceTeams) {
         // Create new team with required fields (always copy name, sport, gender as they're required)
-        const newTeamData: any = {
+        const newTeamData: Record<string, string | number | Date | null> = {
           id: crypto.randomUUID(),
           organization_id: organizationId,
           season_id: input.targetSeasonId,
@@ -466,7 +467,8 @@ export async function copyTeams(input: CopyTeamsInput): Promise<CopyTeamsResult>
         }
 
         const newTeam = await tx.teams.create({
-          data: newTeamData,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          data: newTeamData as any,
         });
 
         newTeams.push(newTeam);

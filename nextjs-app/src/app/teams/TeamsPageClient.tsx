@@ -89,7 +89,7 @@ export default function TeamsPageClient({ teams, seasons, staff, currentUser }: 
       // Use the intended state of the current item (checked parameter)
       if (checked) {
         // Add all in range
-        setSelectedTeamIds([...new Set([...selectedTeamIds, ...rangeTeamIds])]);
+        setSelectedTeamIds(Array.from(new Set([...selectedTeamIds, ...rangeTeamIds])));
       } else {
         // Remove all in range
         setSelectedTeamIds(selectedTeamIds.filter(id => !rangeTeamIds.includes(id)));

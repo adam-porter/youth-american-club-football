@@ -4,12 +4,10 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { differenceInYears, subYears, format } from 'date-fns';
 import type { TeamWithStats, Season, UpdateTeamInput } from '@/lib/actions/teams';
 import { updateTeam, createTeam, deleteTeams } from '@/lib/actions/teams';
-import Modal from '@/components/Modal';
 import Button from '@/components/Button';
 import Select from '@/components/Select';
 import { useToast } from '@/components/Toast';
 import ViewHeader from '@/components/ViewHeader';
-import Icon from '@/components/Icon';
 import ActionBar from '@/components/ActionBar';
 import CopyTeamsModal from '@/components/CopyTeamsModal';
 import EmptyState from '@/components/EmptyState';
@@ -20,13 +18,6 @@ interface ManageTeamsPageClientProps {
   teams: TeamWithStats[];
   seasons: Season[];
   initialSeasonId: string;
-}
-
-// Convert age to approximate birthdate (for display)
-function ageToBirthdate(age: number | null): string {
-  if (age === null) return '';
-  const birthdate = subYears(new Date(), age);
-  return format(birthdate, 'MMM dd, yyyy');
 }
 
 // Convert birthdate to age
@@ -153,76 +144,6 @@ function EditableSelectCell({ value, options, onSave, onSaveSuccess, className }
   );
 }
 
-interface EditableNumberCellProps {
-  value: number | null;
-  onSave: (value: number | null) => Promise<void>;
-  onSaveSuccess?: () => void;
-  placeholder?: string;
-  className?: string;
-}
-
-function EditableNumberCell({ value, onSave, onSaveSuccess, placeholder, className }: EditableNumberCellProps) {
-  const [editValue, setEditValue] = useState(value?.toString() || '');
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setEditValue(value?.toString() || '');
-  }, [value]);
-
-  const handleBlur = async () => {
-    const numValue = editValue === '' ? null : parseInt(editValue, 10);
-    if (numValue === value || (numValue === null && value === null)) {
-      return;
-    }
-
-    if (editValue !== '' && isNaN(numValue!)) {
-      setError('Please enter a valid number');
-      setEditValue(value?.toString() || '');
-      return;
-    }
-
-    setIsSaving(true);
-    setError(null);
-    try {
-      await onSave(numValue);
-      onSaveSuccess?.();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save');
-      setEditValue(value?.toString() || '');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      (e.currentTarget as HTMLElement).blur();
-    } else if (e.key === 'Escape') {
-      setEditValue(value?.toString() || '');
-      (e.currentTarget as HTMLElement).blur();
-    }
-  };
-
-  return (
-    <div className={`inline-cell ${className || ''}`}>
-      <input
-        type="text"
-        inputMode="numeric"
-        pattern="[0-9]*"
-        value={editValue}
-        onChange={(e) => setEditValue(e.target.value)}
-        onBlur={handleBlur}
-        onKeyDown={handleKeyDown}
-        placeholder={placeholder || '-'}
-        className={`inline-input ${error ? 'inline-input--error' : ''} ${isSaving ? 'inline-input--saving' : ''}`}
-        disabled={isSaving}
-      />
-      {error && <span className="inline-error">{error}</span>}
-    </div>
-  );
-}
-
 interface EditableDateCellProps {
   age: number | null;
   onSave: (age: number | null) => Promise<void>;
@@ -285,9 +206,6 @@ function EditableDateCell({ age, onSave, onSaveSuccess, className }: EditableDat
       (e.currentTarget as HTMLElement).blur();
     }
   };
-
-  // Display formatted date or placeholder
-  const displayValue = editValue ? format(new Date(editValue), 'MMM dd, yyyy') : '';
 
   return (
     <div className={`inline-cell inline-date-cell ${className || ''}`}>
@@ -661,7 +579,7 @@ export default function ManageTeamsPageClient({
         setLocalTeams(prev => [...prev, newTeam]);
         showToast(`Successfully created team "${result.team.title}"`, 'success');
       }
-    } catch (error) {
+    } catch {
       showToast('Failed to create team', 'error');
     } finally {
       setIsCreating(false);
@@ -765,7 +683,7 @@ export default function ManageTeamsPageClient({
       } else {
         showToast(result.error || 'Failed to delete teams', 'error');
       }
-    } catch (error) {
+    } catch {
       showToast('Failed to delete teams', 'error');
     } finally {
       setIsDeleting(false);
