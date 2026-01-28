@@ -132,17 +132,17 @@ const contentMap: Record<EmptyStateVariant, { title: string; description: string
   },
   'teams-season': {
     title: 'No teams for this season',
-    description: 'Get started by tapping "+ Add Team" to create your first team.',
+    description: 'Click "Manage Teams" to create new teams or copy from a previous season.',
     icon: <CalendarIcon />,
   },
   'teams-athletes': {
     title: 'No athletes yet',
-    description: 'Athletes will appear here once they are added to your teams.',
+    description: 'Athletes will appear here once teams are provisioned. Use Team Assignments to assign athletes to draft teams, then contact your CSM.',
     icon: <UsersIcon />,
   },
   'teams-parents': {
-    title: 'No parents yet',
-    description: 'Parents will appear here once athletes are registered.',
+    title: 'No family members yet',
+    description: 'Family members will appear here once teams are provisioned. Use Team Assignments to assign athletes to draft teams, then contact your CSM.',
     icon: <UsersIcon />,
   },
   'teams-staff': {
@@ -250,7 +250,7 @@ export default function EmptyState({ variant, searchQuery, seasonName }: EmptySt
           font-size: var(--u-font-size-200, 14px);
           color: var(--u-color-base-foreground, #36485c);
           margin: 0;
-          max-width: 400px;
+          max-width: 456px;
           line-height: 1.4;
         }
       `}</style>

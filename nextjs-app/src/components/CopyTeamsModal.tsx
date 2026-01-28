@@ -5,8 +5,7 @@ import Modal from './Modal';
 import Button from './Button';
 import Select from './Select';
 import Icon from './Icon';
-import { copyTeams, type Season } from '@/lib/actions/teams';
-import { useRouter } from 'next/navigation';
+import { copyTeams, type Season, type TeamWithStats } from '@/lib/actions/teams';
 import { useToast } from './Toast';
 
 interface CopyTeamsModalProps {
@@ -15,6 +14,7 @@ interface CopyTeamsModalProps {
   selectedTeamIds: string[];
   sourceSeasonId: string;
   seasons: Season[];
+  onSuccess?: (newTeams: TeamWithStats[]) => void;
 }
 
 interface CopyOptions {
@@ -30,9 +30,9 @@ export default function CopyTeamsModal({
   isOpen, 
   onClose, 
   selectedTeamIds, 
-  seasons 
+  seasons,
+  onSuccess,
 }: CopyTeamsModalProps) {
-  const router = useRouter();
   const { showToast } = useToast();
   const [targetSeasonId, setTargetSeasonId] = useState('');
   const [copyOptions, setCopyOptions] = useState<CopyOptions>({
@@ -81,8 +81,10 @@ export default function CopyTeamsModal({
 
     if (result.success) {
       showToast(`Successfully duplicated ${selectedTeamIds.length} ${selectedTeamIds.length === 1 ? 'team' : 'teams'}`, 'success');
+      if (result.teams && onSuccess) {
+        onSuccess(result.teams);
+      }
       onClose();
-      router.refresh();
     } else {
       setError(result.error || 'Failed to copy teams');
     }
@@ -95,7 +97,7 @@ export default function CopyTeamsModal({
 
   const seasonOptions = availableSeasons.map(s => ({
     value: s.id,
-    label: s.name,
+    label: `${s.name} Season`,
   }));
 
   const handleOptionChange = (key: keyof CopyOptions) => {

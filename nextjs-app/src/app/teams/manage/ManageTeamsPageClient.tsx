@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { differenceInYears, subYears, format } from 'date-fns';
 import type { TeamWithStats, Season, UpdateTeamInput } from '@/lib/actions/teams';
 import { updateTeam, createTeam, deleteTeams } from '@/lib/actions/teams';
@@ -140,6 +141,242 @@ function EditableSelectCell({ value, options, onSave, onSaveSuccess, className }
         fullWidth
       />
       {error && <span className="inline-error">{error}</span>}
+    </div>
+  );
+}
+
+interface EditableMultiSelectCellProps {
+  values: string[];  // Array of selected values
+  options: { value: string; label: string }[];
+  onSave: (values: string[]) => Promise<void>;
+  onSaveSuccess?: () => void;
+  placeholder?: string;
+  className?: string;
+}
+
+function EditableMultiSelectCell({ values, options, onSave, onSaveSuccess, placeholder, className }: EditableMultiSelectCellProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedValues, setSelectedValues] = useState<string[]>(values);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setSelectedValues(values);
+  }, [values]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        if (isOpen) {
+          handleClose();
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen, selectedValues, values]);
+
+  const handleClose = async () => {
+    setIsOpen(false);
+    
+    // Check if values changed
+    const sortedNew = [...selectedValues].sort();
+    const sortedOld = [...values].sort();
+    const hasChanged = sortedNew.length !== sortedOld.length || 
+      sortedNew.some((v, i) => v !== sortedOld[i]);
+    
+    if (hasChanged) {
+      setIsSaving(true);
+      setError(null);
+      try {
+        await onSave(selectedValues);
+        onSaveSuccess?.();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to save');
+        setSelectedValues(values); // Revert on error
+      } finally {
+        setIsSaving(false);
+      }
+    }
+  };
+
+  const toggleValue = (value: string) => {
+    setSelectedValues(prev => 
+      prev.includes(value) 
+        ? prev.filter(v => v !== value)
+        : [...prev, value]
+    );
+  };
+
+  const getDisplayLabel = () => {
+    if (selectedValues.length === 0) return placeholder || 'Select...';
+    if (selectedValues.length === 1) {
+      const option = options.find(o => o.value === selectedValues[0]);
+      return option?.label || selectedValues[0];
+    }
+    // Sort and show range or list
+    const sortedValues = [...selectedValues].map(v => parseInt(v, 10)).sort((a, b) => a - b);
+    const labels = sortedValues.map(v => {
+      const option = options.find(o => o.value === v.toString());
+      return option?.label || v.toString();
+    });
+    return labels.join(', ');
+  };
+
+  return (
+    <div className={`inline-cell inline-multiselect-cell ${className || ''}`} ref={dropdownRef}>
+      <button
+        type="button"
+        className={`multiselect-trigger ${isOpen ? 'multiselect-trigger--open' : ''} ${isSaving ? 'multiselect-trigger--saving' : ''}`}
+        onClick={() => setIsOpen(!isOpen)}
+        disabled={isSaving}
+      >
+        <span className={`multiselect-value ${selectedValues.length === 0 ? 'multiselect-value--placeholder' : ''}`}>{getDisplayLabel()}</span>
+        <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg" className="multiselect-arrow">
+          <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+      {isOpen && (
+        <div className="multiselect-dropdown">
+          {options.map(option => (
+            <label key={option.value} className="multiselect-option">
+              <input
+                type="checkbox"
+                checked={selectedValues.includes(option.value)}
+                onChange={() => toggleValue(option.value)}
+                className="multiselect-checkbox-input"
+              />
+              <span className={`multiselect-checkbox ${selectedValues.includes(option.value) ? 'multiselect-checkbox--checked' : ''}`}>
+                {selectedValues.includes(option.value) && (
+                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1 4L3.5 6.5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                )}
+              </span>
+              <span className="multiselect-option-label">{option.label}</span>
+            </label>
+          ))}
+        </div>
+      )}
+      {error && <span className="inline-error">{error}</span>}
+      <style jsx>{`
+        .inline-multiselect-cell {
+          position: relative;
+        }
+
+        .multiselect-trigger {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+          width: 100%;
+          height: 40px;
+          padding: var(--u-space-half, 8px) var(--u-space-three-quarter, 12px);
+          border: 1px solid var(--u-color-line-subtle, #c4c6c8);
+          border-radius: var(--u-border-radius-medium, 4px);
+          background: var(--u-color-background-container, #fefefe);
+          font-family: var(--u-font-body);
+          font-size: var(--u-font-size-default, 16px);
+          color: var(--u-color-base-foreground, #36485c);
+          cursor: pointer;
+          text-align: left;
+          transition: border-color 0.15s ease, background 0.15s ease;
+        }
+
+        .multiselect-trigger:hover:not(:disabled) {
+          background: var(--u-color-background-subtle, #f5f6f7);
+          border-color: var(--u-color-base-foreground-subtle, #607081);
+        }
+
+        .multiselect-trigger--open {
+          border-color: var(--u-color-emphasis-background-contrast, #0273e3);
+        }
+
+        .multiselect-trigger--saving {
+          opacity: 0.6;
+        }
+
+        .multiselect-value {
+          flex: 1;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .multiselect-value--placeholder {
+          color: var(--u-color-base-foreground-subtle, #607081);
+        }
+
+        .multiselect-arrow {
+          flex-shrink: 0;
+          color: var(--u-color-base-foreground-subtle, #607081);
+          transition: transform 0.15s ease;
+        }
+
+        .multiselect-trigger--open .multiselect-arrow {
+          transform: rotate(180deg);
+        }
+
+        .multiselect-dropdown {
+          position: absolute;
+          top: calc(100% + 4px);
+          left: 0;
+          min-width: 100%;
+          max-height: 240px;
+          overflow-y: auto;
+          background: var(--u-color-background-container, #fefefe);
+          border: 1px solid var(--u-color-line-subtle, #c4c6c8);
+          border-radius: var(--u-border-radius-medium, 4px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          z-index: 100;
+        }
+
+        .multiselect-option {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 12px;
+          cursor: pointer;
+          transition: background 0.15s ease;
+        }
+
+        .multiselect-option:hover {
+          background: var(--u-color-background-subtle, #f5f6f7);
+        }
+
+        .multiselect-checkbox-input {
+          position: absolute;
+          opacity: 0;
+          width: 0;
+          height: 0;
+        }
+
+        .multiselect-checkbox {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 16px;
+          height: 16px;
+          border: 1px solid var(--u-color-line-subtle, #c4c6c8);
+          border-radius: 3px;
+          background: var(--u-color-background-container, #fefefe);
+          color: white;
+          transition: background 0.15s ease, border-color 0.15s ease;
+        }
+
+        .multiselect-checkbox--checked {
+          background: var(--u-color-emphasis-background-contrast, #0273e3);
+          border-color: var(--u-color-emphasis-background-contrast, #0273e3);
+        }
+
+        .multiselect-option-label {
+          font-family: var(--u-font-body);
+          font-size: var(--u-font-size-200, 14px);
+          color: var(--u-color-base-foreground, #36485c);
+        }
+      `}</style>
     </div>
   );
 }
@@ -394,69 +631,83 @@ function EditableAvatarCell({ avatar, title, teamId, onUpload }: EditableAvatarC
 
   return (
     <>
-      <button
-        type="button"
-        onClick={handleClick}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        disabled={isUploading}
+      <div
         style={{
-          position: 'relative',
           width: 40,
           height: 40,
-          borderRadius: '50%',
-          overflow: 'hidden',
-          border: 'none',
-          padding: 0,
-          cursor: isUploading ? 'wait' : 'pointer',
-          background: avatar ? 'transparent' : 'var(--u-color-background-subtle, #f5f6f7)',
+          padding: 2,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          opacity: isUploading ? 0.6 : 1,
         }}
       >
-        {avatar ? (
-          <img
-            src={avatar}
-            alt={title}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-            }}
-          />
-        ) : (
-          <span
-            style={{
-              color: 'var(--u-color-base-foreground-subtle, #607081)',
-              fontSize: 12,
-              fontFamily: 'var(--u-font-body)',
-              fontWeight: 500,
-            }}
-          >
-            {initials}
-          </span>
-        )}
-        {isHovered && (
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'rgba(0, 0, 0, 0.5)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: '50%',
-              color: 'white',
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M8 3V13M3 8H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-          </div>
-        )}
-      </button>
+        <button
+          type="button"
+          onClick={handleClick}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          disabled={isUploading}
+          style={{
+            position: 'relative',
+            width: '100%',
+            height: '100%',
+            borderRadius: 9999,
+            overflow: 'hidden',
+            border: '1px solid #fafafa',
+            padding: 0,
+            cursor: isUploading ? 'wait' : 'pointer',
+            background: avatar ? '#fefefe' : '#38434f',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: isUploading ? 0.6 : 1,
+          }}
+        >
+          {avatar ? (
+            <img
+              src={avatar}
+              alt={title}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+              }}
+            />
+          ) : (
+            <span
+              style={{
+                color: 'white',
+                fontSize: 12,
+                fontFamily: 'var(--u-font-body)',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: -0.3,
+                lineHeight: 1,
+              }}
+            >
+              {initials}
+            </span>
+          )}
+          {isHovered && (
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                background: 'rgba(0, 0, 0, 0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 9999,
+                color: 'white',
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 3V13M3 8H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            </div>
+          )}
+        </button>
+      </div>
       <input
         ref={fileInputRef}
         type="file"
@@ -473,6 +724,7 @@ export default function ManageTeamsPageClient({
   seasons,
   initialSeasonId,
 }: ManageTeamsPageClientProps) {
+  const router = useRouter();
   const { showToast } = useToast();
   const [selectedSeasonId, setSelectedSeasonId] = useState(initialSeasonId);
   const [searchQuery, setSearchQuery] = useState('');
@@ -484,12 +736,8 @@ export default function ManageTeamsPageClient({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Update local teams when prop changes
-  // Note: This only happens on page navigation, not during edits
-  // (because we removed revalidatePath from updateTeam)
-  useEffect(() => {
-    setLocalTeams(teams);
-  }, [teams]);
+  // Note: We intentionally do NOT sync localTeams with the teams prop after initial load.
+  // This prevents table reordering during edits. Fresh data is loaded on page navigation.
 
   // Filter teams by season and search
   const filteredTeams = localTeams.filter(team => {
@@ -538,16 +786,59 @@ export default function ManageTeamsPageClient({
   }, [showToast]);
 
   const handleAvatarUpload = useCallback(async (teamId: string, file: File) => {
-    // For now, create a local URL preview and show a toast
-    // In production, this would upload to a storage service
-    const localUrl = URL.createObjectURL(file);
+    // Create a local preview immediately for better UX
+    const localPreview = URL.createObjectURL(file);
     
-    // Update local state optimistically
+    // Update local state optimistically with preview
     setLocalTeams(prev => prev.map(team => 
-      team.id === teamId ? { ...team, avatar: localUrl } : team
+      team.id === teamId ? { ...team, avatar: localPreview } : team
     ));
-    
-    showToast('Avatar updated (preview only - upload not implemented)', 'success');
+
+    try {
+      // Upload to the API
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('teamId', teamId);
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const data = await response.json();
+      
+      if (!data.success || !data.url) {
+        throw new Error(data.error || 'Upload failed');
+      }
+
+      // Save the URL to the database
+      const result = await updateTeam({ id: teamId, avatar: data.url });
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to save avatar');
+      }
+
+      // Update local state with the permanent URL
+      setLocalTeams(prev => prev.map(team => 
+        team.id === teamId ? { ...team, avatar: data.url } : team
+      ));
+
+      // Clean up the preview URL
+      URL.revokeObjectURL(localPreview);
+      
+      showToast('Avatar updated', 'success');
+    } catch (error) {
+      // Revert on error
+      setLocalTeams(prev => prev.map(team => 
+        team.id === teamId ? { ...team, avatar: null } : team
+      ));
+      URL.revokeObjectURL(localPreview);
+      showToast(error instanceof Error ? error.message : 'Failed to upload avatar', 'error');
+    }
   }, [showToast]);
 
   const handleAddTeam = async () => {
@@ -565,7 +856,7 @@ export default function ManageTeamsPageClient({
           title: result.team.title,
           sport: 'Football',
           gender: 'Male',
-          grade: null,
+          grades: null,
           avatar: null,
           primaryColor: null,
           secondaryColor: null,
@@ -695,7 +986,8 @@ export default function ManageTeamsPageClient({
       <ViewHeader
         title="Manage Teams"
         actionLabel="Done"
-        actionNavigatesBack
+        onBack={() => router.push(`/teams?season=${selectedSeasonId}`)}
+        onAction={() => router.push(`/teams?season=${selectedSeasonId}`)}
       />
 
       <CopyTeamsModal
@@ -704,6 +996,10 @@ export default function ManageTeamsPageClient({
         selectedTeamIds={selectedTeamIds}
         sourceSeasonId={selectedSeasonId}
         seasons={seasons}
+        onSuccess={(newTeams) => {
+          setLocalTeams(prev => [...prev, ...newTeams]);
+          handleClearSelection();
+        }}
       />
 
       <ConfirmDialog
@@ -837,10 +1133,11 @@ export default function ManageTeamsPageClient({
                     />
                   </td>
                   <td className="cell-grade">
-                    <EditableSelectCell
-                      value={team.grade?.toString() || ''}
+                    <EditableMultiSelectCell
+                      values={team.grades ? team.grades.split(',') : []}
                       options={gradeOptions}
-                      onSave={(value) => handleUpdateTeam(team.id, { grade: value ? parseInt(value, 10) : null })}
+                      placeholder="Select grades..."
+                      onSave={(values) => handleUpdateTeam(team.id, { grades: values.length > 0 ? values.join(',') : null })}
                     />
                   </td>
                   <td className="cell-birthdate">
@@ -881,11 +1178,11 @@ export default function ManageTeamsPageClient({
           position: fixed;
           inset: 0;
           background: var(--u-color-background-canvas, #eff0f0);
-          padding: 8px;
+          padding: var(--u-space-half, 8px);
           z-index: 1000;
           display: flex;
           flex-direction: column;
-          gap: 8px;
+          gap: var(--u-space-half, 8px);
         }
 
         .manage-teams-page {
@@ -897,7 +1194,7 @@ export default function ManageTeamsPageClient({
           overflow: hidden;
           border-radius: var(--u-border-radius-large, 8px);
           padding: var(--u-space-one-and-half, 24px);
-          gap: var(--u-space-half, 8px);
+          gap: var(--u-space-one, 16px);
         }
 
         .manage-teams-controls-wrapper {
@@ -1013,24 +1310,18 @@ export default function ManageTeamsPageClient({
         }
 
         .cell-title {
-          min-width: 200px;
+          min-width: 156px;
         }
 
         .cell-sport,
-        .cell-gender {
-          min-width: 120px;
-        }
-
-        .cell-grade {
-          width: 100px;
+        .cell-gender,
+        .cell-grade,
+        .cell-color {
+          min-width: 124px;
         }
 
         .cell-birthdate {
           min-width: 150px;
-        }
-
-        .cell-color {
-          min-width: 100px;
         }
 
       `}</style>
@@ -1059,6 +1350,9 @@ export default function ManageTeamsPageClient({
           outline: none;
           transition: border-color 0.15s ease, background 0.15s ease;
           box-sizing: border-box;
+          text-overflow: ellipsis;
+          overflow: hidden;
+          white-space: nowrap;
         }
 
         .inline-input::placeholder {
@@ -1098,6 +1392,10 @@ export default function ManageTeamsPageClient({
           position: relative;
         }
 
+        .inline-select-cell .select-trigger {
+          min-width: unset;
+        }
+
         .inline-select {
           appearance: none;
           -webkit-appearance: none;
@@ -1113,6 +1411,9 @@ export default function ManageTeamsPageClient({
           outline: none;
           transition: border-color 0.15s ease, background-color 0.15s ease;
           box-sizing: border-box;
+          text-overflow: ellipsis;
+          overflow: hidden;
+          white-space: nowrap;
         }
 
         .inline-select:hover:not(:focus) {

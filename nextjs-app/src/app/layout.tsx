@@ -17,6 +17,9 @@ export const metadata: Metadata = {
   description: 'Youth football club management platform',
 };
 
+// Force dynamic rendering to ensure fresh data for workspace switcher
+export const dynamic = 'force-dynamic';
+
 export default async function RootLayout({
   children,
 }: {

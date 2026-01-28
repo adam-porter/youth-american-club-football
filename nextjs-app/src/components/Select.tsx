@@ -14,6 +14,8 @@ export interface SelectProps {
   onChange?: (value: string) => void;
   disabled?: boolean;
   fullWidth?: boolean;
+  searchable?: boolean;
+  searchPlaceholder?: string;
 }
 
 function ChevronDownIcon() {
@@ -32,44 +34,117 @@ function CheckIcon() {
   );
 }
 
+function SearchIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M7.33333 12.6667C10.2789 12.6667 12.6667 10.2789 12.6667 7.33333C12.6667 4.38781 10.2789 2 7.33333 2C4.38781 2 2 4.38781 2 7.33333C2 10.2789 4.38781 12.6667 7.33333 12.6667Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M14 14L11.1 11.1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
 interface SelectMenuProps {
   options: SelectOption[];
   value?: string;
   onSelect: (value: string) => void;
+  searchable?: boolean;
+  searchPlaceholder?: string;
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
 }
 
-function SelectMenu({ options, value, onSelect }: SelectMenuProps) {
+function SelectMenu({ options, value, onSelect, searchable, searchPlaceholder, searchQuery, onSearchChange }: SelectMenuProps) {
+  const filteredOptions = searchable && searchQuery
+    ? options.filter(option => 
+        option.label.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : options;
+
   return (
     <div className="select-menu" role="listbox">
-      {options.map((option) => {
-        const isSelected = value?.toLowerCase() === option.value.toLowerCase();
-        return (
-          <button
-            key={option.value}
-            className={`select-option ${isSelected ? 'select-option--selected' : ''}`}
-            onClick={() => onSelect(option.value)}
-            role="option"
-            aria-selected={isSelected}
-            type="button"
-          >
-            <span className="select-option-label">{option.label}</span>
-            {isSelected && <CheckIcon />}
-          </button>
-        );
-      })}
+      {searchable && (
+        <div className="select-search">
+          <SearchIcon />
+          <input
+            type="text"
+            placeholder={searchPlaceholder || 'Search...'}
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            onClick={(e) => e.stopPropagation()}
+            autoFocus
+          />
+        </div>
+      )}
+      <div className="select-options">
+        {filteredOptions.length === 0 ? (
+          <div className="select-no-results">No results found</div>
+        ) : (
+          filteredOptions.map((option) => {
+            const isSelected = value?.toLowerCase() === option.value.toLowerCase();
+            return (
+              <button
+                key={option.value}
+                className={`select-option ${isSelected ? 'select-option--selected' : ''}`}
+                onClick={() => onSelect(option.value)}
+                role="option"
+                aria-selected={isSelected}
+                type="button"
+              >
+                <span className="select-option-label">{option.label}</span>
+                {isSelected && <CheckIcon />}
+              </button>
+            );
+          })
+        )}
+      </div>
       <style jsx>{`
         .select-menu {
           position: absolute;
           top: calc(100% + 4px);
           left: 0;
           min-width: 100%;
-          max-height: 120px; /* ~3 items at 40px each */
           background: var(--u-color-background-container, #fefefe);
           border: 1px solid var(--u-color-line-subtle, #c4c6c8);
           border-radius: var(--u-border-radius-medium, 4px);
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
           z-index: 100;
+          overflow: hidden;
+        }
+
+        .select-search {
+          display: flex;
+          align-items: center;
+          gap: var(--u-space-half, 8px);
+          padding: var(--u-space-half, 8px) var(--u-space-three-quarter, 12px);
+          border-bottom: 1px solid var(--u-color-line-subtle, #c4c6c8);
+          color: var(--u-color-base-foreground-subtle, #607081);
+        }
+
+        .select-search input {
+          flex: 1;
+          border: none;
+          outline: none;
+          background: transparent;
+          font-family: var(--u-font-body);
+          font-size: var(--u-font-size-200, 14px);
+          color: var(--u-color-base-foreground, #36485c);
+        }
+
+        .select-search input::placeholder {
+          color: var(--u-color-base-foreground-subtle, #607081);
+        }
+
+        .select-options {
+          max-height: 160px;
           overflow-y: auto;
+        }
+
+        .select-no-results {
+          padding: var(--u-space-half, 8px) var(--u-space-one, 16px);
+          font-family: var(--u-font-body);
+          font-size: var(--u-font-size-200, 14px);
+          color: var(--u-color-base-foreground-subtle, #607081);
+          text-align: center;
         }
 
         .select-option {
@@ -105,8 +180,9 @@ function SelectMenu({ options, value, onSelect }: SelectMenuProps) {
   );
 }
 
-export default function Select({ options, value, placeholder = 'Select...', onChange, disabled = false, fullWidth = false }: SelectProps) {
+export default function Select({ options, value, placeholder = 'Select...', onChange, disabled = false, fullWidth = false, searchable = false, searchPlaceholder }: SelectProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -114,6 +190,7 @@ export default function Select({ options, value, placeholder = 'Select...', onCh
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
+        setSearchQuery(''); // Clear search when closing
       }
     };
 
@@ -128,10 +205,12 @@ export default function Select({ options, value, placeholder = 'Select...', onCh
   const selectedLabel = value 
     ? (matchedOption?.label || value)
     : placeholder;
+  const isPlaceholder = !value;
 
   const handleSelect = (selectedValue: string) => {
     onChange?.(selectedValue);
     setIsOpen(false);
+    setSearchQuery(''); // Clear search after selection
   };
 
   return (
@@ -144,7 +223,7 @@ export default function Select({ options, value, placeholder = 'Select...', onCh
         disabled={disabled}
         type="button"
       >
-        <span className="select-label">{selectedLabel}</span>
+        <span className={`select-label ${isPlaceholder ? 'select-label--placeholder' : ''}`}>{selectedLabel}</span>
         <ChevronDownIcon />
       </button>
 
@@ -153,6 +232,10 @@ export default function Select({ options, value, placeholder = 'Select...', onCh
           options={options}
           value={value}
           onSelect={handleSelect}
+          searchable={searchable}
+          searchPlaceholder={searchPlaceholder}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
         />
       )}
 
@@ -188,6 +271,10 @@ export default function Select({ options, value, placeholder = 'Select...', onCh
         .select-label {
           flex: 1;
           text-align: left;
+        }
+
+        .select-label--placeholder {
+          color: var(--u-color-base-foreground-subtle, #607081);
         }
       `}</style>
     </div>

@@ -105,23 +105,30 @@ export async function getPrograms(organizationId: string): Promise<ProgramWithSt
     orderBy: { created_at: 'desc' }
   });
   
-  return programs.map(program => ({
-    id: program.id,
-    title: program.title,
-    type: program.type,
-    eventDates: program.event_dates as { start?: string; end?: string },
-    visibility: program.visibility as 'public' | 'private',
-    registrationStatus: (program.registration_status || 'open') as 'open' | 'closed',
-    status: (program.status || 'published') as ProgramStatus,
-    registrantCount: program._count.registration_submissions,
-    programValue: 0, // $0.00 - no payment tracking yet
-    createdBy: program.creator ? {
-      id: program.creator.id,
-      firstName: program.creator.first_name,
-      lastName: program.creator.last_name,
-      avatar: program.creator.avatar
-    } : null
-  }));
+  return programs.map(program => {
+    const registrantCount = program._count.registration_submissions;
+    const defaultSeasonPrice = program.default_season_price ? Number(program.default_season_price) : 0;
+    // programValue is in cents (registrantCount * price in dollars * 100)
+    const programValue = Math.round(registrantCount * defaultSeasonPrice * 100);
+    
+    return {
+      id: program.id,
+      title: program.title,
+      type: program.type,
+      eventDates: program.event_dates as { start?: string; end?: string },
+      visibility: program.visibility as 'public' | 'private',
+      registrationStatus: (program.registration_status || 'open') as 'open' | 'closed',
+      status: (program.status || 'published') as ProgramStatus,
+      registrantCount,
+      programValue,
+      createdBy: program.creator ? {
+        id: program.creator.id,
+        firstName: program.creator.first_name,
+        lastName: program.creator.last_name,
+        avatar: program.creator.avatar
+      } : null
+    };
+  });
 }
 
 export async function getOrganizationId(): Promise<string | null> {
@@ -129,4 +136,188 @@ export async function getOrganizationId(): Promise<string | null> {
     select: { id: true }
   });
   return org?.id ?? null;
+}
+
+export interface Registration {
+  id: string;
+  programId: string;
+  title: string;
+  sport: string;
+  submissionCount: number;
+}
+
+export async function getRegistrationsByProgram(programId: string): Promise<Registration[]> {
+  const registrations = await db.registrations.findMany({
+    where: { program_id: programId },
+    include: {
+      _count: {
+        select: {
+          registration_submissions: true
+        }
+      }
+    },
+    orderBy: { created_at: 'desc' }
+  });
+
+  return registrations.map(reg => ({
+    id: reg.id,
+    programId: reg.program_id,
+    title: reg.title,
+    sport: reg.sport,
+    submissionCount: reg._count.registration_submissions,
+  }));
+}
+
+export async function getAllRegistrations(organizationId: string): Promise<Registration[]> {
+  const registrations = await db.registrations.findMany({
+    where: {
+      programs: {
+        organization_id: organizationId
+      }
+    },
+    include: {
+      _count: {
+        select: {
+          registration_submissions: true
+        }
+      }
+    },
+    orderBy: { created_at: 'desc' }
+  });
+
+  return registrations.map(reg => ({
+    id: reg.id,
+    programId: reg.program_id,
+    title: reg.title,
+    sport: reg.sport,
+    submissionCount: reg._count.registration_submissions,
+  }));
+}
+
+export interface TeamAssignment {
+  teamId: string;
+  teamSeasonId: string | null;
+  status: string;
+}
+
+export interface RegisteredAthlete {
+  id: string;
+  submissionId: string;
+  registrationId: string;
+  firstName: string;
+  lastName: string;
+  birthdate: string;
+  teamId: string | null; // Legacy - kept for backward compatibility
+  teamSeasonId: string | null; // Legacy - kept for backward compatibility
+  teamAssignments: TeamAssignment[];
+}
+
+export async function getAthletesByRegistration(registrationId: string): Promise<RegisteredAthlete[]> {
+  const submissions = await db.registration_submissions.findMany({
+    where: { registration_id: registrationId },
+    include: {
+      athletes: {
+        select: {
+          id: true,
+          first_name: true,
+          last_name: true,
+          birthdate: true,
+        }
+      },
+      teams: {
+        select: {
+          id: true,
+          season_id: true,
+        }
+      },
+      team_assignments: {
+        include: {
+          teams: {
+            select: {
+              id: true,
+              season_id: true,
+            }
+          }
+        }
+      }
+    },
+    orderBy: { created_at: 'desc' }
+  });
+
+  return submissions.map(sub => ({
+    id: sub.athlete_id,
+    submissionId: sub.id,
+    registrationId: sub.registration_id,
+    firstName: sub.athletes.first_name,
+    lastName: sub.athletes.last_name,
+    birthdate: sub.athletes.birthdate.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    }),
+    teamId: sub.team_id,
+    teamSeasonId: sub.teams?.season_id || null,
+    teamAssignments: sub.team_assignments.map(ta => ({
+      teamId: ta.team_id,
+      teamSeasonId: ta.teams.season_id,
+      status: ta.status,
+    })),
+  }));
+}
+
+export async function getAllAthleteSubmissions(organizationId: string): Promise<RegisteredAthlete[]> {
+  const submissions = await db.registration_submissions.findMany({
+    where: {
+      programs: {
+        organization_id: organizationId
+      }
+    },
+    include: {
+      athletes: {
+        select: {
+          id: true,
+          first_name: true,
+          last_name: true,
+          birthdate: true,
+        }
+      },
+      teams: {
+        select: {
+          id: true,
+          season_id: true,
+        }
+      },
+      team_assignments: {
+        include: {
+          teams: {
+            select: {
+              id: true,
+              season_id: true,
+            }
+          }
+        }
+      }
+    },
+    orderBy: { created_at: 'desc' }
+  });
+
+  return submissions.map(sub => ({
+    id: sub.athlete_id,
+    submissionId: sub.id,
+    registrationId: sub.registration_id,
+    firstName: sub.athletes.first_name,
+    lastName: sub.athletes.last_name,
+    birthdate: sub.athletes.birthdate.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    }),
+    teamId: sub.team_id,
+    teamSeasonId: sub.teams?.season_id || null,
+    teamAssignments: sub.team_assignments.map(ta => ({
+      teamId: ta.team_id,
+      teamSeasonId: ta.teams.season_id,
+      status: ta.status,
+    })),
+  }));
 }

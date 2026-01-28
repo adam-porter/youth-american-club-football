@@ -69,28 +69,29 @@ model programs {
 }
 
 model registration_submissions {
-  id                  String        @id
+  id                  String             @id
   registration_id     String
   program_id          String
   athlete_id          String
   parent_id           String
-  registration_status String        @default("paid")
+  registration_status String             @default("paid")
   payment_method      String?
   team_id             String?
-  assignment_status   String        @default("paid")
+  assignment_status   String             @default("paid")
   source_program_id   String?
   assigned_at         DateTime?
   notified_at         DateTime?
   invited_at          DateTime?
   responded_at        DateTime?
   finalized_at        DateTime?
-  created_at          DateTime      @default(now())
+  created_at          DateTime           @default(now())
   updated_at          DateTime
-  athletes            athletes      @relation(fields: [athlete_id], references: [id], onDelete: Cascade)
-  users               users         @relation(fields: [parent_id], references: [id], onDelete: Cascade)
-  programs            programs      @relation(fields: [program_id], references: [id], onDelete: Cascade)
-  registrations       registrations @relation(fields: [registration_id], references: [id], onDelete: Cascade)
-  teams               teams?        @relation(fields: [team_id], references: [id])
+  athletes            athletes           @relation(fields: [athlete_id], references: [id], onDelete: Cascade)
+  users               users              @relation(fields: [parent_id], references: [id], onDelete: Cascade)
+  programs            programs           @relation(fields: [program_id], references: [id], onDelete: Cascade)
+  registrations       registrations      @relation(fields: [registration_id], references: [id], onDelete: Cascade)
+  teams               teams?             @relation(fields: [team_id], references: [id])
+  team_assignments    team_assignments[]
 }
 
 model registrations {
@@ -141,7 +142,7 @@ model teams {
   sport                    String
   age_min                  Int?
   age_max                  Int?
-  grade                    Int?
+  grades                   String?                    // Comma-separated grade values, e.g., "1,2,3"
   gender                   String
   avatar                   String?
   primary_color            String?
@@ -156,6 +157,7 @@ model teams {
   updated_at               DateTime
   registration_submissions registration_submissions[]
   team_members             team_members[]
+  team_assignments         team_assignments[]
   organizations            organizations              @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   seasons                  seasons?                   @relation(fields: [season_id], references: [id])
   programs                 programs?                  @relation(fields: [season_program_id], references: [id])
@@ -191,6 +193,22 @@ model team_members {
   @@unique([team_id, user_id])
   @@index([team_id])
   @@index([user_id])
+}
+
+model team_assignments {
+  id            String   @id @default(uuid())
+  team_id       String
+  submission_id String
+  status        String   @default("assigned") // assigned, invited, accepted, declined
+  assigned_at   DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  
+  teams                    teams                    @relation(fields: [team_id], references: [id], onDelete: Cascade)
+  registration_submissions registration_submissions @relation(fields: [submission_id], references: [id], onDelete: Cascade)
+  
+  @@unique([team_id, submission_id])
+  @@index([team_id])
+  @@index([submission_id])
 }
 
 model nav_items {

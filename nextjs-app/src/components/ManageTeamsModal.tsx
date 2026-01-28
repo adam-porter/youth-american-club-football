@@ -585,7 +585,7 @@ export default function ManageTeamsModal({
           title: result.team.title,
           sport: 'Football',
           gender: 'Male',
-          grade: null,
+          grades: null,
           avatar: null,
           primaryColor: null,
           secondaryColor: null,
@@ -739,8 +739,8 @@ export default function ManageTeamsModal({
                     </td>
                     <td className="cell-grade">
                       <EditableNumberCell
-                        value={team.grade}
-                        onSave={(value) => handleUpdateTeam(team.id, { grade: value })}
+                        value={team.grades ? parseInt(team.grades.split(',')[0], 10) : null}
+                        onSave={(value) => handleUpdateTeam(team.id, { grades: value !== null ? value.toString() : null })}
                         placeholder="Grade"
                       />
                     </td>

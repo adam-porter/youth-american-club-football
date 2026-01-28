@@ -27,7 +27,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
     const id = Math.random().toString(36).substring(7);
-    setToasts((prev) => [...prev, { id, message, type }]);
+    // Replace existing toasts of the same type instead of stacking
+    setToasts((prev) => {
+      // Keep only toasts of different types, replace same-type toasts
+      const filtered = prev.filter((t) => t.type !== type);
+      return [...filtered, { id, message, type }];
+    });
   }, []);
 
   const removeToast = useCallback((id: string) => {

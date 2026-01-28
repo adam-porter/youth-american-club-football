@@ -66,10 +66,12 @@ export default function NavigationWrapper({
   children 
 }: NavigationWrapperProps) {
   const pathname = usePathname();
-  const isManageTeamsPage = pathname === '/teams/manage';
+  
+  // Full-screen pages that hide navigation
+  const isFullScreenPage = pathname === '/teams/manage' || pathname === '/teams/assignments';
 
-  // If on manage teams page, render children without navigation
-  if (isManageTeamsPage) {
+  // If on a full-screen page, render children without navigation
+  if (isFullScreenPage) {
     return <>{children}</>;
   }
 

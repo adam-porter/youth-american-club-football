@@ -6,10 +6,34 @@ import type { EmptyStateVariant } from './EmptyState';
 import Icon from './Icon';
 import Checkbox from './Checkbox';
 
-function formatGrade(grade: number | null): string {
-  if (grade === null) return '—';
-  const suffix = grade === 1 ? 'st' : grade === 2 ? 'nd' : grade === 3 ? 'rd' : 'th';
-  return `${grade}${suffix} Grade`;
+function formatGrades(grades: string | null): string {
+  if (!grades) return '—';
+  
+  const gradeValues = grades.split(',').map(g => parseInt(g.trim(), 10)).sort((a, b) => a - b);
+  
+  if (gradeValues.length === 0) return '—';
+  
+  const formatSingleGrade = (grade: number): string => {
+    if (grade === -1) return 'Pre-K';
+    if (grade === 0) return 'K';
+    const suffix = grade === 1 ? 'st' : grade === 2 ? 'nd' : grade === 3 ? 'rd' : 'th';
+    return `${grade}${suffix}`;
+  };
+  
+  if (gradeValues.length === 1) {
+    return formatSingleGrade(gradeValues[0]);
+  }
+  
+  // Check if consecutive - show as range
+  const isConsecutive = gradeValues.every((val, i) => 
+    i === 0 || val === gradeValues[i - 1] + 1
+  );
+  
+  if (isConsecutive && gradeValues.length > 2) {
+    return `${formatSingleGrade(gradeValues[0])}–${formatSingleGrade(gradeValues[gradeValues.length - 1])}`;
+  }
+  
+  return gradeValues.map(formatSingleGrade).join(', ');
 }
 
 function formatSport(sport: string): string {
@@ -39,45 +63,52 @@ function TeamAvatar({ avatar, title }: { avatar: string | null; title: string })
     .slice(0, 2)
     .toUpperCase();
 
-  if (avatar) {
-    return (
-      <div className="team-avatar">
-        <img src={avatar} alt={title} />
-        <style jsx>{`
-          .team-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            overflow: hidden;
-            flex-shrink: 0;
-          }
-          .team-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-          }
-        `}</style>
-      </div>
-    );
-  }
-
   return (
-    <div className="team-avatar-placeholder">
-      {initials}
+    <div className="team-avatar">
+      <div className={`team-avatar-inner ${avatar ? 'team-avatar-inner--has-image' : ''}`}>
+        {avatar ? (
+          <img src={avatar} alt={title} />
+        ) : (
+          <span className="team-avatar-initials">{initials}</span>
+        )}
+      </div>
       <style jsx>{`
-        .team-avatar-placeholder {
+        .team-avatar {
           width: 32px;
           height: 32px;
-          border-radius: 50%;
-          background: var(--u-color-background-subtle, #f5f6f7);
-          color: var(--u-color-base-foreground-subtle, #607081);
+          padding: 2px;
+          flex-shrink: 0;
           display: flex;
           align-items: center;
           justify-content: center;
+        }
+        .team-avatar-inner {
+          width: 100%;
+          height: 100%;
+          border-radius: 9999px;
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--u-color-identity-default, #38434f);
+          border: 1px solid var(--u-color-identity-white, #fafafa);
+        }
+        .team-avatar-inner--has-image {
+          background: var(--u-color-background-container, #fefefe);
+        }
+        .team-avatar-inner img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        .team-avatar-initials {
           font-family: var(--u-font-body);
           font-size: 12px;
           font-weight: var(--u-font-weight-bold, 700);
-          flex-shrink: 0;
+          color: white;
+          text-transform: uppercase;
+          letter-spacing: -0.3px;
+          line-height: 1;
         }
       `}</style>
     </div>
@@ -182,7 +213,7 @@ function StatusBadge({ status }: { status: string }) {
         {label}
       </span>
       {isDraft && (
-        <span className="status-tooltip">Contact your CSM to add this team to your Hudl subscription</span>
+        <span className="status-tooltip">Contact your CSM to add this team to your Hudl account</span>
       )}
       <style jsx>{`
         .status-badge-wrapper {
@@ -333,7 +364,7 @@ function TableContent({
         return (
           <div 
             key={team.id} 
-            className={`table-row table-data ${isSelected ? 'table-data--selected' : ''}`}
+            className={`table-row table-data ${isSelected ? 'table-data--selected' : ''} ${team.status === 'draft' ? 'table-data--draft' : ''}`}
           >
             {copyMode && (
               <div className="table-cell cell-checkbox">
@@ -357,7 +388,7 @@ function TableContent({
             {formatSport(team.sport)}
           </div>
           <div className="table-cell cell-grade">
-            {formatGrade(team.grade)}
+            {formatGrades(team.grades)}
           </div>
           <div className="table-cell cell-gender">
             {formatGender(team.gender)}
@@ -400,6 +431,10 @@ function TableContent({
         .table-data:hover {
           background: var(--u-color-background-subtle, #f5f6f7);
           cursor: pointer;
+        }
+
+        .table-data--draft:hover {
+          cursor: default;
         }
 
         .table-data--selected {
@@ -448,6 +483,10 @@ function TableContent({
 
         .table-data:hover .team-name {
           text-decoration-color: var(--u-color-line-subtle, #c4c6c8);
+        }
+
+        .table-data--draft:hover .team-name {
+          text-decoration-color: transparent;
         }
 
         .cell-sport {
