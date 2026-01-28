@@ -736,8 +736,10 @@ export default function ManageTeamsPageClient({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Note: We intentionally do NOT sync localTeams with the teams prop after initial load.
-  // This prevents table reordering during edits. Fresh data is loaded on page navigation.
+  // Sync localTeams with fresh teams data from server when navigating back to the page
+  useEffect(() => {
+    setLocalTeams(teams);
+  }, [teams]);
 
   // Filter teams by season and search
   const filteredTeams = localTeams.filter(team => {
