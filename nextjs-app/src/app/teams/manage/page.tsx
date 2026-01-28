@@ -12,11 +12,9 @@ export default async function ManageTeamsPage({ searchParams }: ManageTeamsPageP
   const params = await searchParams;
   const organizationId = await getOrganizationId();
 
-  // Parallelize data fetching for better performance
-  const [teams, seasons] = await Promise.all([
-    organizationId ? getAllTeams(organizationId) : Promise.resolve([]),
-    organizationId ? getSeasons(organizationId) : Promise.resolve([]),
-  ]);
+  // Sequential data fetching to avoid connection pool exhaustion
+  const teams = organizationId ? await getAllTeams(organizationId) : [];
+  const seasons = organizationId ? await getSeasons(organizationId) : [];
   
   // Use season from URL params, fall back to active season, then first season
   const seasonFromUrl = params.season ? seasons.find(s => s.id === params.season) : null;

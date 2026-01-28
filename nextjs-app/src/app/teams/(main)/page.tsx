@@ -13,14 +13,12 @@ export default async function TeamsPage({
   const params = await searchParams;
   const organizationId = await getOrganizationId();
 
-  // Parallelize data fetching for better performance
-  const [teams, seasons, staff, rosterAthletes, currentUserData] = await Promise.all([
-    organizationId ? getAllTeams(organizationId) : Promise.resolve([]),
-    organizationId ? getSeasons(organizationId) : Promise.resolve([]),
-    organizationId ? getStaffUsers(organizationId) : Promise.resolve([]),
-    organizationId ? getAthletesOnProvisionedTeams(organizationId) : Promise.resolve([]),
-    getCurrentUser(),
-  ]);
+  // Sequential data fetching to avoid connection pool exhaustion
+  const teams = organizationId ? await getAllTeams(organizationId) : [];
+  const seasons = organizationId ? await getSeasons(organizationId) : [];
+  const staff = organizationId ? await getStaffUsers(organizationId) : [];
+  const rosterAthletes = organizationId ? await getAthletesOnProvisionedTeams(organizationId) : [];
+  const currentUserData = await getCurrentUser();
   const currentUser = currentUserData ? {
     id: currentUserData.id,
     firstName: currentUserData.first_name,
