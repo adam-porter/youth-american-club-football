@@ -11,8 +11,12 @@ interface ManageTeamsPageProps {
 export default async function ManageTeamsPage({ searchParams }: ManageTeamsPageProps) {
   const params = await searchParams;
   const organizationId = await getOrganizationId();
-  const teams = organizationId ? await getAllTeams(organizationId) : [];
-  const seasons = organizationId ? await getSeasons(organizationId) : [];
+
+  // Parallelize data fetching for better performance
+  const [teams, seasons] = await Promise.all([
+    organizationId ? getAllTeams(organizationId) : Promise.resolve([]),
+    organizationId ? getSeasons(organizationId) : Promise.resolve([]),
+  ]);
   
   // Use season from URL params, fall back to active season, then first season
   const seasonFromUrl = params.season ? seasons.find(s => s.id === params.season) : null;

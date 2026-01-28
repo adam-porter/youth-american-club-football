@@ -218,6 +218,9 @@ export default function TeamsPageClient({ teams, seasons, staff, rosterAthletes,
                 onDelete={() => setIsDeleteDialogOpen(true)}
                 onClose={handleClearSelection}
                 onClearSelection={handleClearSelection}
+                deleteDisabled={selectedTeamIds.some(id => 
+                  localTeams.find(t => t.id === id)?.status !== 'draft'
+                )}
               />
             )}
           </div>

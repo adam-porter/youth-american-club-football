@@ -8,6 +8,7 @@ interface ActionBarProps {
   onDelete: () => void;
   onClose: () => void;
   onClearSelection: () => void;
+  deleteDisabled?: boolean;
 }
 
 function DuplicateIcon() {
@@ -40,7 +41,7 @@ function CloseIcon() {
   );
 }
 
-export default function ActionBar({ selectedCount, onDuplicate, onDelete, onClose, onClearSelection }: ActionBarProps) {
+export default function ActionBar({ selectedCount, onDuplicate, onDelete, onClose, onClearSelection, deleteDisabled = false }: ActionBarProps) {
   return (
     <div className="action-bar">
       <div className="action-bar-left">
@@ -77,7 +78,8 @@ export default function ActionBar({ selectedCount, onDuplicate, onDelete, onClos
           size="medium"
           iconAlignment="left"
           onClick={onDelete}
-          className="action-bar-button"
+          className={`action-bar-button${deleteDisabled ? ' action-bar-button--disabled' : ''}`}
+          disabled={deleteDisabled}
         >
           <span className="action-bar-button-content">
             <DeleteIcon />
@@ -148,6 +150,26 @@ export default function ActionBar({ selectedCount, onDuplicate, onDelete, onClos
 
         .action-bar-close .action-bar-button-content {
           display: none;
+        }
+
+        .action-bar-button--disabled {
+          opacity: 0.2 !important;
+          cursor: not-allowed !important;
+          pointer-events: none !important;
+        }
+
+        :global(.action-bar-button--disabled) {
+          opacity: 0.2 !important;
+        }
+
+        :global(.action-bar-button--disabled *) {
+          opacity: 1 !important;
+        }
+
+        :global(.action-bar-button--disabled button) {
+          opacity: 0.2 !important;
+          cursor: not-allowed !important;
+          pointer-events: none !important;
         }
       `}</style>
     </div>

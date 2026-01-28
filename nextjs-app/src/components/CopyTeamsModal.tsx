@@ -26,10 +26,11 @@ interface CopyOptions {
   grade: boolean;
 }
 
-export default function CopyTeamsModal({ 
-  isOpen, 
-  onClose, 
-  selectedTeamIds, 
+export default function CopyTeamsModal({
+  isOpen,
+  onClose,
+  selectedTeamIds,
+  sourceSeasonId,
   seasons,
   onSuccess,
 }: CopyTeamsModalProps) {
@@ -48,14 +49,12 @@ export default function CopyTeamsModal({
 
   // Allow all seasons including the current season
   const availableSeasons = seasons;
-  // Default to active season, or first season if none active
-  const defaultSeason = seasons.find(s => s.isActive) || seasons[0];
 
   useEffect(() => {
-    if (isOpen && defaultSeason) {
-      setTargetSeasonId(defaultSeason.id);
+    if (isOpen && sourceSeasonId) {
+      setTargetSeasonId(sourceSeasonId);
     }
-  }, [isOpen, defaultSeason]);
+  }, [isOpen, sourceSeasonId]);
 
   const handleSubmit = async () => {
     if (!targetSeasonId) {

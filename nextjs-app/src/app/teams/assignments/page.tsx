@@ -12,11 +12,15 @@ interface AssignmentsPageProps {
 export default async function AssignmentsPage({ searchParams }: AssignmentsPageProps) {
   const params = await searchParams;
   const organizationId = await getOrganizationId();
-  const teams = organizationId ? await getAllTeams(organizationId) : [];
-  const seasons = organizationId ? await getSeasons(organizationId) : [];
-  const programs = organizationId ? await getPrograms(organizationId) : [];
-  const registrations = organizationId ? await getAllRegistrations(organizationId) : [];
-  const athletes = organizationId ? await getAllAthleteSubmissions(organizationId) : [];
+
+  // Parallelize data fetching for better performance
+  const [teams, seasons, programs, registrations, athletes] = await Promise.all([
+    organizationId ? getAllTeams(organizationId) : Promise.resolve([]),
+    organizationId ? getSeasons(organizationId) : Promise.resolve([]),
+    organizationId ? getPrograms(organizationId) : Promise.resolve([]),
+    organizationId ? getAllRegistrations(organizationId) : Promise.resolve([]),
+    organizationId ? getAllAthleteSubmissions(organizationId) : Promise.resolve([]),
+  ]);
   
   // Use season from URL params, fall back to active season, then first season
   const seasonFromUrl = params.season ? seasons.find(s => s.id === params.season) : null;
