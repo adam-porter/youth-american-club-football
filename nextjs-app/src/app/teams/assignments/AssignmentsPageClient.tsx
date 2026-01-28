@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { TeamWithStats, Season } from '@/lib/actions/teams';
 import { assignAthletesToTeam, unassignAthleteFromTeam } from '@/lib/actions/teams';
